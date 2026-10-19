@@ -4,7 +4,9 @@ HOID (Home Office Interface Device) is a local-first, personality-driven assista
 
 **Status (October 19, 2026):** The first infrastructure milestone is complete: Home Assistant on a private homelab host controls a test lamp through a smart outlet, and authenticated REST API ON/OFF commands were physically verified. **HOID application code, telephone integration, speech, and LLM orchestration have not yet been implemented.**
 
-This repository documents the intended HOID application, architecture, and eventual code. Deployment paths, Docker configuration, network security, and operations for the private homelab host are maintained in the separate [homelab repository](https://github.com/JohnMThompson/homelab). Local-only planning notes are kept in `docs/planning/`, which is Git-ignored.
+**Public repository policy:** HOID is intentionally public for shareable application code and sanitized documentation. Agents and contributors must follow [AGENTS.md](AGENTS.md) to keep credentials, real device mappings, household topology, and runtime configuration out of public commits.
+
+This repository documents the intended HOID application, architecture, and eventual code. Deployment paths, Docker configuration, network security, and operations for Pileated are maintained in the separate [homelab repository](https://github.com/JohnMThompson/homelab). Local-only planning notes are kept in `docs/planning/`, which is Git-ignored.
 
 ## Project documentation
 
