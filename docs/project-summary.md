@@ -122,7 +122,7 @@ Asterisk is the preferred PBX candidate, pending validation in a working phone p
 
 ## 5. Hosting and homelab integration
 
-**Preferred host:** the private homelab host, the existing always-on Ubuntu Server homelab machine, using Docker Compose.
+**Preferred host:** an always-on private Ubuntu Server machine, using Docker Compose.
 
 - Run Asterisk in its **own Compose project**, separate from the HOID application.
 - Docker host networking is a reasonable starting candidate for SIP/RTP on Linux, to reduce NAT/port-mapping complexity; validate security and compatibility during implementation.
@@ -138,7 +138,7 @@ Home Assistant is now deployed independently using Docker Compose and persistent
 
 ### Office phone
 
-An initial **SIP desk phone** has been selected for testing. Delivery and provisioning have not been verified as of October 19, 2026. The previously considered a previously considered SIP model is historical candidate research, not the selected test phone. Dialing/off-hook behavior and SIP registration still require hardware validation.
+An initial **SIP desk phone** has been selected for testing. Delivery and provisioning have not been verified as of October 19, 2026. An earlier SIP phone model was considered, not the selected test phone. Dialing/off-hook behavior and SIP registration still require hardware validation.
 
 ### Workshop phone
 
@@ -166,7 +166,7 @@ Test Wi-Fi signal quality, latency, packet loss, and roaming stability in the ga
 
 ### Office lighting
 
-**First working device (verified October 19, 2026):** A Wi-Fi smart outlet powers the desk lamp. It is integrated locally with Home Assistant's native local smart-device integration as an outlet entity (identifier kept private) (entity domain `switch`, device class `outlet`). Home Assistant UI and authenticated REST API ON/OFF commands both physically controlled the lamp; the final API state read was `off`. This verifies the device/control path, **not** a deployed HOID application. See [Home Assistant integration](home-assistant-integration.md).
+**First working device (verified October 19, 2026):** A Wi-Fi smart outlet powers the desk lamp. It is integrated locally with Home Assistant's local smart-device integration as an outlet entity (actual identifier private; domain `switch`, device class `outlet`). Home Assistant UI and authenticated REST API ON/OFF commands both physically controlled the lamp; the final API state read was `off`. This verifies the device/control path, **not** a deployed HOID application. See [Home Assistant integration](home-assistant-integration.md).
 
 Existing setup:
 
@@ -250,7 +250,7 @@ Capabilities above are product ideas, **not a committed backlog**.
 ### Preferred candidates, not final selections
 
 - Asterisk as PBX, deployed via Docker Compose with host networking.
-- an earlier SIP phone candidate was an earlier phone candidate; the initial test phone is now SIP desk phone.
+- An earlier SIP phone candidate was superseded by the selected initial test phone; hardware details remain private.
 - Hue-based office lighting.
 - Wi-Fi client bridge for a workshop Ethernet SIP phone.
 - Example extension numbers `100`/`101`/`102`.
@@ -262,7 +262,7 @@ Capabilities above are product ideas, **not a committed backlog**.
 - Select local STT/TTS engines, voice, and audio pipeline through prototyping.
 - Validate the phone model, provisioning, and off-hook behavior when phone hardware is available.
 - Define detailed notification delivery, timeout, health-check, and retry behavior during prototyping.
-- Extend smart lighting beyond the verified Shelly desk-lamp outlet only after selecting and validating additional hardware.
+- Extend smart lighting beyond the verified first lamp outlet only after selecting and validating additional hardware.
 - Define monitoring, secrets, updates, backups, and recovery during deployment planning.
 - Revisit WIT connectivity and endpoint-specific behavior when the workshop effort begins.
 - Define authorization and confirmation only if sensitive capabilities are proposed; such capabilities are outside initial scope.
