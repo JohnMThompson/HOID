@@ -2,9 +2,9 @@
 
 HOID (Home Office Interface Device) is a local-first, personality-driven assistant project for a home office, with a possible future workshop presence called WIT (Workshop Interface Technology). The defining interaction is a physical SIP desk phone; ordinary telephone calling and physical lighting controls should remain useful without the assistant.
 
-**Status (October 19, 2026):** The first infrastructure milestone is complete: Home Assistant on Pileated controls an office desk lamp through a Shelly smart outlet, and authenticated REST API ON/OFF commands were physically verified. **HOID application code, telephone integration, speech, and LLM orchestration have not yet been implemented.**
+**Status (October 19, 2026):** The first infrastructure milestone is complete: Home Assistant on a private homelab host controls a test lamp through a smart outlet, and authenticated REST API ON/OFF commands were physically verified. **HOID application code, telephone integration, speech, and LLM orchestration have not yet been implemented.**
 
-This repository documents the intended HOID application, architecture, and eventual code. Deployment paths, Docker configuration, network security, and operations for Pileated are maintained in the separate [homelab repository](https://github.com/JohnMThompson/homelab). Local-only planning notes are kept in `docs/planning/`, which is Git-ignored.
+This repository documents the intended HOID application, architecture, and eventual code. Deployment paths, Docker configuration, network security, and operations for the private homelab host are maintained in the separate [homelab repository](https://github.com/JohnMThompson/homelab). Local-only planning notes are kept in `docs/planning/`, which is Git-ignored.
 
 ## Project documentation
 
