@@ -4,7 +4,7 @@
 
 ## Working end-to-end proof
 
-On the private Ubuntu/Docker homelab host, Home Assistant Container communicates locally with a Wi-Fi smart outlet through its native Shelly integration. A user authenticated from the homelab host with a Home Assistant long-lived access token, read the outlet state, issued ON and OFF REST service calls, and confirmed the physical office desk lamp responded to both commands. The final state read was `off`.
+On the private Ubuntu/Docker homelab host, Home Assistant Container communicates locally with a Wi-Fi smart outlet through its local smart-device integration. A user authenticated from the homelab host with a Home Assistant long-lived access token, read the outlet state, issued ON and OFF REST service calls, and confirmed the physical office desk lamp responded to both commands. The final state read was `off`.
 
 ```text
 Future SIP phone → Future HOID intent router → Future allowlisted device-control client
