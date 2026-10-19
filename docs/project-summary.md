@@ -1,6 +1,6 @@
 # HOID — Project Summary
 
-> **Status (October 19, 2026):** Home Assistant and one physical smart-outlet control path are deployed and manually verified on Pileated. HOID application code, SIP/PBX, speech, and inference remain unimplemented.
+> **Status (October 19, 2026):** Home Assistant and one physical smart-outlet control path are deployed and manually verified on the private homelab host. HOID application code, SIP/PBX, speech, and inference remain unimplemented.
 > **Purpose:** Public overview of the project direction and planning status. This is a living summary, **not** a complete implementation specification.
 
 ## 1. Project overview
@@ -111,34 +111,34 @@ Future garage SIP phone (WIT / ext. 102) ─┘                    │
 
 | Component | Responsibility | Current status |
 | --- | --- | --- |
-| SIP phone | Physical calling, handset/speakerphone, ringing | Cisco SPA303 selected for initial testing; delivery and provisioning not verified as of October 19 |
+| SIP phone | Physical calling, handset/speakerphone, ringing | SIP desk phone selected for initial testing; delivery and provisioning not verified as of October 19 |
 | PBX | SIP registration, call routing, RTP/media, internal extensions | Asterisk is preferred; selection and deployment not validated |
 | HOID orchestrator | Session management, persona/context, tool routing, notifications, memory policy | Conceptual |
 | STT / TTS | Speech recognition and synthesis | Local processing selected as direction; engines and voice deferred to prototyping |
 | Local LLM | Conversational reasoning | Ollama selected as initial runtime; model and compute capacity remain to be validated |
-| Home Assistant | Source of truth and abstraction for smart devices/automation | Deployed on Pileated; Shelly desk lamp and authenticated REST API ON/OFF manually verified October 19 |
+| Home Assistant | Source of truth and abstraction for smart devices/automation | Deployed on the private homelab host; first lamp and authenticated REST API ON/OFF manually verified October 19 |
 
 Asterisk is the preferred PBX candidate, pending validation in a working phone prototype. Keep the PBX independent from HOID orchestration so ordinary SIP routing remains available if the assistant fails. The SIP/RTP bridge mechanism is deferred until prototyping establishes a working bidirectional audio path to a simple test application and local STT/TTS. ARI and External Media are possibilities to evaluate, not selected mechanisms. The prototype should measure end-to-end latency and assess interruption support; advanced streaming/barge-in is not required at first.
 
 ## 5. Hosting and homelab integration
 
-**Preferred host:** `pileated`, the existing always-on Ubuntu Server homelab machine, using Docker Compose.
+**Preferred host:** the private homelab host, the existing always-on Ubuntu Server homelab machine, using Docker Compose.
 
 - Run Asterisk in its **own Compose project**, separate from the HOID application.
 - Docker host networking is a reasonable starting candidate for SIP/RTP on Linux, to reduce NAT/port-mapping complexity; validate security and compatibility during implementation.
 - SIP signaling commonly uses UDP 5060, and RTP commonly uses a configurable UDP range (often 10000–20000). These are **examples, not finalized port allocations**.
 - Persist Asterisk configuration and relevant state/logs using mounted volumes.
 - Asterisk's resource needs for a few internal extensions should be modest; **local model inference is likely to dominate compute requirements**.
-- The Raspberry Pi (`nuthatch`) is an alternative host or possible future fallback, but is **not preferred** for the initial PBX deployment.
-- If `pileated` is down, its hosted PBX and internal calls are down; that availability tradeoff is acceptable for this convenience-oriented system initially.
+- A secondary low-power utility host is an alternative host or possible future fallback, but is **not preferred** for the initial PBX deployment.
+- If the private homelab host is down, its hosted PBX and internal calls are down; that availability tradeoff is acceptable for this convenience-oriented system initially.
 
-Home Assistant is now deployed independently at `/srv/services/homeassistant/compose.yml` with persistent configuration under `/srv/data/homeassistant/config` on Pileated. These are **infrastructure facts**, owned by the [homelab repository](https://github.com/JohnMThompson/homelab/blob/main/infrastructure/home-assistant.md), not a proposed HOID application layout. Paths for future Asterisk and HOID deployments remain undecided. Do not assume the inference stack can run acceptably on current hardware.
+Home Assistant is now deployed independently using Docker Compose and persistent configuration on the private homelab host. These are **infrastructure facts**, owned by the [homelab repository](https://github.com/JohnMThompson/homelab/blob/main/infrastructure/home-assistant.md), not a proposed HOID application layout. Paths for future Asterisk and HOID deployments remain undecided. Do not assume the inference stack can run acceptably on current hardware.
 
 ## 6. Telephony hardware and network
 
 ### Office phone
 
-The initial phone selected is a **Cisco SPA303**. Delivery and provisioning have not been verified as of October 19, 2026. The previously considered Cisco CP-8841-3PC-K9 (3PCC/MPP) is historical candidate research, not the selected test phone. Dialing/off-hook behavior and SIP registration still require hardware validation.
+An initial **SIP desk phone** has been selected for testing. Delivery and provisioning have not been verified as of October 19, 2026. The previously considered a previously considered SIP model is historical candidate research, not the selected test phone. Dialing/off-hook behavior and SIP registration still require hardware validation.
 
 ### Workshop phone
 
@@ -166,7 +166,7 @@ Test Wi-Fi signal quality, latency, packet loss, and roaming stability in the ga
 
 ### Office lighting
 
-**First working device (verified October 19, 2026):** A Shelly Plug US Gen4 powers the desk lamp. It is integrated locally with Home Assistant's native Shelly integration as `switch.office_desk_lamp` (entity domain `switch`, device class `outlet`). Home Assistant UI and authenticated REST API ON/OFF commands both physically controlled the lamp; the final API state read was `off`. This verifies the device/control path, **not** a deployed HOID application. See [Home Assistant integration](home-assistant-integration.md).
+**First working device (verified October 19, 2026):** A Wi-Fi smart outlet powers the desk lamp. It is integrated locally with Home Assistant's native local smart-device integration as an outlet entity (identifier kept private) (entity domain `switch`, device class `outlet`). Home Assistant UI and authenticated REST API ON/OFF commands both physically controlled the lamp; the final API state read was `off`. This verifies the device/control path, **not** a deployed HOID application. See [Home Assistant integration](home-assistant-integration.md).
 
 Existing setup:
 
@@ -225,8 +225,8 @@ Capabilities above are product ideas, **not a committed backlog**.
 
 ### Established direction
 
-- Home Assistant Container is deployed on Pileated, and the Shelly desk lamp's local API control was physically verified October 19. A HOID software client has not been implemented.
-- The Cisco SPA303 is selected for initial SIP phone testing; delivery/provisioning are pending verification.
+- Home Assistant Container is deployed on the private homelab host, and local API control of the first lamp was physically verified October 19. A HOID software client has not been implemented.
+- The SIP desk phone is selected for initial SIP phone testing; delivery/provisioning are pending verification.
 - The project and repository are named **HOID**.
 - The primary voice interaction is a physical SIP desk phone, not an always-listening smart speaker.
 - The workshop variant is named **WIT** and is a secondary effort intended to share the underlying system.
@@ -245,12 +245,12 @@ Capabilities above are product ideas, **not a committed backlog**.
 - Fail safely when dependencies or integrations are unavailable; never claim unconfirmed success.
 - Local STT/TTS processing is the initial direction; engine and voice selection are deferred to prototyping.
 - Ollama is the selected initial LLM runtime; the model and required compute capacity remain open.
-- Prefer `pileated` for the PBX; keep the PBX independently deployable from HOID.
+- Prefer the private homelab host for the PBX; keep the PBX independently deployable from HOID.
 
 ### Preferred candidates, not final selections
 
 - Asterisk as PBX, deployed via Docker Compose with host networking.
-- Cisco CP-8841-3PC-K9 with 3PCC/MPP firmware was an earlier phone candidate; the initial test phone is now Cisco SPA303.
+- an earlier SIP phone candidate was an earlier phone candidate; the initial test phone is now SIP desk phone.
 - Hue-based office lighting.
 - Wi-Fi client bridge for a workshop Ethernet SIP phone.
 - Example extension numbers `100`/`101`/`102`.
@@ -273,9 +273,9 @@ Capabilities above are product ideas, **not a committed backlog**.
 ## 10. Suggested milestones (nonbinding)
 
 1. **Document the concept:** Repository README, this summary, vision, design principles, and lightweight decision records.
-2. **Validate telephony:** Use the preferred PBX candidate on `pileated` to verify ordinary calling between two SIP extensions before adding AI. This is separate from the initial assistant scope, which targets one SIP phone. WIT and multi-phone deployment are secondary.
+2. **Validate telephony:** Use the preferred PBX candidate on the private homelab host to verify ordinary calling between two SIP extensions before adding AI. This is separate from the initial assistant scope, which targets one SIP phone. WIT and multi-phone deployment are secondary.
 3. **Prototype assistant calls:** Connect a minimal voice assistant endpoint to the PBX; measure end-to-end latency.
-4. **Introduce controlled home actions:** Home Assistant + Shelly lamp + direct REST API proof **completed October 19, 2026**; the HOID allowlisted Python client and voice-driven control remain future work.
+4. **Introduce controlled home actions:** Home Assistant + first lamp + direct REST API proof **completed October 19, 2026**; the HOID allowlisted Python client and voice-driven control remain future work.
 5. **Refine character and reliability:** Persona, short responses, session lifecycle, logging, failure handling, and notifications.
 6. **Extend to WIT:** Garage connectivity, second endpoint, workshop context and safe tool permissions.
 
