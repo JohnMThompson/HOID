@@ -4,33 +4,35 @@
 
 ## Working end-to-end proof
 
-On the Pileated Ubuntu/Docker host, Home Assistant Container communicates locally with a Shelly Plug US Gen4 through its native Shelly integration. A user authenticated from Pileated with a Home Assistant long-lived access token, read the outlet state, issued ON and OFF REST service calls, and confirmed the physical office desk lamp responded to both commands. The final state read was `off`.
+On the private Ubuntu/Docker homelab host, Home Assistant Container communicates locally with a Wi-Fi smart outlet through its local smart-device integration. A user authenticated from the homelab host with a Home Assistant long-lived access token, read the outlet state, issued ON and OFF REST service calls, and confirmed the physical office desk lamp responded to both commands. The final state read was `off`.
 
 ```text
 Future SIP phone → Future HOID intent router → Future allowlisted device-control client
                                                         |
                                                         | Home Assistant REST API
                                                         v
-                                          Home Assistant on Pileated [WORKING]
+                                          Home Assistant on a private homelab host [WORKING]
                                                         |
-                                                        | Native Shelly integration
+                                                        | Local smart-device integration
                                                         v
                                           Office Desk Lamp outlet [WORKING]
 ```
 
 The authoritative deployment paths, Docker/network configuration, operational runbook considerations, and host credentials **belong to the separate [homelab documentation](https://github.com/JohnMThompson/homelab/blob/main/infrastructure/home-assistant.md)**. Do not duplicate server configuration or commit any access tokens to this repository.
 
-## Initial entity mapping
+## Illustrative entity mapping (not live configuration)
+
+The following identifiers are **synthetic examples**, not the actual household entity mapping. Actual entity IDs and device inventory belong in private runtime configuration.
 
 | Field | Value |
 | --- | --- |
-| Logical device name | `office_desk_lamp` |
-| Natural language alias | “desk lamp” |
-| Home Assistant area | `Office` |
-| Home Assistant entity | `switch.office_desk_lamp` |
+| Logical device name | `example_lamp` |
+| Natural language alias | “example lamp” |
+| Home Assistant area | Example room |
+| Home Assistant entity | `switch.example_lamp` |
 | Entity domain | `switch` |
 | Device class | `outlet` |
-| Physical device | Shelly Plug US Gen4, supplying a desk lamp |
+| Physical device | Example smart outlet supplying a lamp |
 | Allowed actions for MVP | Read state; turn on; turn off |
 
 The `switch` domain is correct for a smart outlet in Home Assistant. The outlet device class describes the hardware; it does not change the entity's API domain. A logical device name or voice alias is not itself an authorized Home Assistant entity ID.
@@ -39,16 +41,16 @@ The `switch` domain is correct for a smart outlet in Home Assistant. The outlet 
 
 The proposed device-control module should expose simple operations, without making telephony, speech engines, or an LLM dependencies:
 
-- `get_state("office_desk_lamp")` — return the Home Assistant state or an explicit error/unavailable result.
-- `turn_on("office_desk_lamp")` — request ON, then read back the entity state.
-- `turn_off("office_desk_lamp")` — request OFF, then read back the entity state.
+- `get_state("example_lamp")` — return the Home Assistant state or an explicit error/unavailable result.
+- `turn_on("example_lamp")` — request ON, then read back the entity state.
+- `turn_off("example_lamp")` — request OFF, then read back the entity state.
 
 Use an **explicit allowlist** mapping stable logical names to permitted Home Assistant entity IDs and actions. Never accept an arbitrary entity ID, service domain, or free-form action from an LLM or user speech and forward it unchecked.
 
-### REST endpoints verified manually
+### REST endpoint shapes (sanitized examples; actual paths verified manually)
 
-- `GET /api/states/switch.office_desk_lamp`
-- `POST /api/services/switch/turn_on` with JSON `{"entity_id":"switch.office_desk_lamp"}`
+- `GET /api/states/switch.example_lamp`
+- `POST /api/services/switch/turn_on` with JSON `{"entity_id":"switch.example_lamp"}`
 - `POST /api/services/switch/turn_off` with the same entity ID
 
 Home Assistant's empty `[]` response to a service call is **not** confirmation that the lamp changed state. The client must check the subsequent entity state. State readback reflects Home Assistant's reported state, not an independent electrical measurement. If an outcome is unknown, say so rather than claiming success.
@@ -74,4 +76,4 @@ Home Assistant's empty `[]` response to a service call is **not** confirmation t
 
 ## Next interfaces
 
-A deterministic intent router will eventually translate an utterance such as “turn on the desk lamp” into an approved logical device/action pair. Asterisk, local speech recognition, text-to-speech, and an Ollama-based fallback remain separate future components. The initial API module should be independently testable without any of them.
+A deterministic intent router will eventually translate an utterance such as “turn on the example lamp” into an approved logical device/action pair. Asterisk, local speech recognition, text-to-speech, and an Ollama-based fallback remain separate future components. The initial API module should be independently testable without any of them.

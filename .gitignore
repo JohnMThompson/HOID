@@ -1,2 +1,74 @@
-# Local-only planning notes
+# Local-only project notes
 docs/planning/
+
+# Runtime configuration and real household mappings
+.env
+.env.*
+!.env.example
+!.env.*.example
+config/local/
+config/private/
+config/secrets/
+*.local.yaml
+*.local.yml
+*.local.json
+*.local.toml
+*.local.ini
+secrets.yaml
+secrets.yml
+secrets.json
+credentials.json
+**/.storage/
+**/secrets/
+
+# Credential/key material (do not commit even if renamed)
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+*.age
+
+# Home Assistant runtime files, snapshots, and backups
+homeassistant/config/
+homeassistant/backups/
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Python caches, environments, and test outputs
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+build/
+dist/
+
+# Editor/OS and transient output
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+logs/
+tmp/
+temp/
+*.tmp
