@@ -72,3 +72,6 @@ logs/
 tmp/
 temp/
 *.tmp
+
+# HOID private runtime configuration
+/hoid.json
