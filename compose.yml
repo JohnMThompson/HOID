@@ -1,0 +1,19 @@
+name: hoid
+
+services:
+  cli:
+    build:
+      context: .
+    network_mode: host
+    user: "${HOID_UID:-1000}:${HOID_GID:-1000}"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      HOID_CONFIG: /run/hoid/config.json
+      HOID_HA_TOKEN_FILE: /run/hoid/ha-token
+    volumes:
+      - ./hoid.json:/run/hoid/config.json:ro
+      - ${HOID_TOKEN_FILE:?Set HOID_TOKEN_FILE to the absolute path of the private token file}:/run/hoid/ha-token:ro
