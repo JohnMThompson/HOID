@@ -100,8 +100,10 @@ class HomeAssistantClient:
         while True:
             try:
                 observed = self._read_state(device.entity_id)
-            except EntityNotFound:
-                raise
+            except (AuthenticationError, EntityNotFound) as exc:
+                raise OutcomeUncertain(
+                    "The command was sent, but its resulting state could not be confirmed."
+                ) from exc
             except (EntityUnavailable, HomeAssistantUnavailable):
                 observed = None
             if observed == expected:
