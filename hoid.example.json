@@ -1,0 +1,9 @@
+{
+  "api_url": "http://home-assistant.example.invalid:8123",
+  "devices": {
+    "desk_lamp": {
+      "entity_id": "switch.example_lamp",
+      "actions": ["get_state", "turn_on", "turn_off"]
+    }
+  }
+}
