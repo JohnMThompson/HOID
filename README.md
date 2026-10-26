@@ -2,7 +2,7 @@
 
 HOID (Home Office Interface Device) is a local-first, personality-driven assistant project for a home office, with a possible future workshop presence called WIT (Workshop Interface Technology). The defining interaction is a physical SIP desk phone; ordinary telephone calling and physical lighting controls should remain useful without the assistant.
 
-**Status (October 26, 2026):** The first infrastructure milestone is complete: Home Assistant on a private homelab host controls a test lamp through a smart outlet, and authenticated REST API ON/OFF commands were physically verified. The first HOID Python Home Assistant client and minimal CLI are implemented and tested locally with mocked responses; **the client has not yet been deployed or validated against the live lamp**. Telephone integration, speech, and LLM orchestration remain unimplemented.
+**Status (October 26, 2026):** The Home Assistant integration, HOID Python CLI, and one-shot Docker CLI have been validated on the private homelab host. The user confirmed physical desk-lamp ON/OFF transitions from both the host CLI and Docker; state reads matched. A private, Git-ignored Compose `.env` file supplies the host token-file path and has been tested. SIP/Asterisk, speech, and LLM orchestration remain planned, not deployed.
 
 **Public repository policy:** HOID is intentionally public for shareable application code and sanitized documentation. Agents and contributors must follow [AGENTS.md](AGENTS.md) to keep credentials, real device mappings, household topology, and runtime configuration out of public commits.
 
@@ -15,7 +15,7 @@ This repository contains HOID's initial application code and documents its archi
 
 ## Next implementation milestone
 
-Deploy and manually validate the Python Home Assistant client against the approved desk lamp, including readback verification and safe failure behavior. SIP/Asterisk and voice capabilities follow separately.
+Next: prepare independent Asterisk/SIP telephone integration and a test extension. Voice capabilities follow separately. The Docker Compose build currently requires a token-file path even when only building the image; simplifying this is planned, not implemented.
 
 ## Python Home Assistant client
 
@@ -56,22 +56,23 @@ A successful readback confirms Home Assistant's reported state, not independent 
 
 ### Testing status
 
-The initial 17 tests passed locally under Python 3.12.15 using mocked HTTP responses and synthetic credentials. Additional regression tests cover inaccessible readback after an accepted command; run the suite again to validate these changes. Live integration and physical device validation remain outstanding.
+The initial mocked suite passed 20 tests locally under Python 3.12.15 before Docker changes. Four token-file tests were subsequently added; their execution result has not been reported. The host CLI and Docker CLI both passed live lamp status, ON, and OFF smoke tests on October 26, 2026, including physical confirmation. These smoke tests do not establish all error-path behavior.
 
-## Docker CLI (experimental; not yet live-validated)
+## Docker CLI (live-validated October 26, 2026)
 
 The repository includes a minimal Dockerfile and Compose definition for **one-shot CLI execution**, not a daemon. Docker Compose uses host networking so the container can access a Home Assistant API listening on the Docker host's loopback interface. This trades away network isolation; no ports are published and the container drops Linux capabilities, has a read-only filesystem, and uses no-new-privileges.
 
 Create a private, Git-ignored `hoid.json` using the synthetic example as a starting point. Set `HOID_TOKEN_FILE` to the absolute path of a host-side, owner-readable token file. The Compose definition mounts both files read-only and sets `HOID_HA_TOKEN_FILE` inside the container; it does **not** inject token contents into Compose environment variables.
 
-Run as the host user that owns the token file (defaults to UID/GID 1000; override `HOID_UID` and `HOID_GID` as needed). For example:
+For persistent configuration, create a private, Git-ignored `.env` alongside `compose.yml` containing `HOID_TOKEN_FILE=/absolute/path/to/private/ha-token` (the path, **not** the token contents), and restrict it with `chmod 600 .env`. Compose loads this file automatically. Run as the host user that owns the token file (defaults to UID/GID 1000; override `HOID_UID` and `HOID_GID` as needed).
 
-    export HOID_TOKEN_FILE="/absolute/path/to/private/ha-token"
     docker compose build
     docker compose run --rm cli lamp status
     docker compose run --rm cli lamp on
     docker compose run --rm cli lamp off
 
+The CLI runs in temporary containers; it is not a background daemon. The current Compose definition requires `HOID_TOKEN_FILE` even for `docker compose build`; the private `.env` file satisfies this requirement. Removing that build-time requirement is future cleanup.
+
 Do not commit `hoid.json`, the token file, or any host-specific environment files. Avoid enabling shell tracing when working with secrets. The Docker image contains only generic application code; it does not contain local configuration or credentials.
 
-**Validation status:** These Docker files are proposed for review; physical-device testing from inside the container has not yet occurred.
+**Validation status (October 26, 2026):** Built successfully on Pileated. The container read the private configuration and token, authenticated to Home Assistant, and reported the lamp OFF; subsequent container commands verified ON, then OFF, with physical confirmation of both transitions. The user also confirmed the private `.env` configuration worked after setup.
