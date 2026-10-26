@@ -36,7 +36,7 @@ Copy the synthetic configuration example:
 
     cp hoid.example.json hoid.json
 
-Set the Home Assistant token using the HOID_HA_TOKEN environment variable. Do not store credentials in the JSON file or commit them.
+Set the Home Assistant token using either the HOID_HA_TOKEN environment variable or HOID_HA_TOKEN_FILE pointing to a readable token file (not both). Do not store credentials in the JSON file or commit them.
 
 The application reads hoid.json by default. HOID_CONFIG overrides the configuration path, and HOID_HA_URL can override the Home Assistant URL.
 
@@ -57,3 +57,21 @@ A successful readback confirms Home Assistant's reported state, not independent 
 ### Testing status
 
 The initial 17 tests passed locally under Python 3.12.15 using mocked HTTP responses and synthetic credentials. Additional regression tests cover inaccessible readback after an accepted command; run the suite again to validate these changes. Live integration and physical device validation remain outstanding.
+
+## Docker CLI (experimental; not yet live-validated)
+
+The repository includes a minimal Dockerfile and Compose definition for **one-shot CLI execution**, not a daemon. Docker Compose uses host networking so the container can access a Home Assistant API listening on the Docker host's loopback interface. This trades away network isolation; no ports are published and the container drops Linux capabilities, has a read-only filesystem, and uses no-new-privileges.
+
+Create a private, Git-ignored `hoid.json` using the synthetic example as a starting point. Set `HOID_TOKEN_FILE` to the absolute path of a host-side, owner-readable token file. The Compose definition mounts both files read-only and sets `HOID_HA_TOKEN_FILE` inside the container; it does **not** inject token contents into Compose environment variables.
+
+Run as the host user that owns the token file (defaults to UID/GID 1000; override `HOID_UID` and `HOID_GID` as needed). For example:
+
+    export HOID_TOKEN_FILE="/absolute/path/to/private/ha-token"
+    docker compose build
+    docker compose run --rm cli lamp status
+    docker compose run --rm cli lamp on
+    docker compose run --rm cli lamp off
+
+Do not commit `hoid.json`, the token file, or any host-specific environment files. Avoid enabling shell tracing when working with secrets. The Docker image contains only generic application code; it does not contain local configuration or credentials.
+
+**Validation status:** These Docker files are proposed for review; physical-device testing from inside the container has not yet occurred.
