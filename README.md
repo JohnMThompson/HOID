@@ -2,7 +2,7 @@
 
 HOID (Home Office Interface Device) is a local-first, personality-driven assistant project for a home office, with a possible future workshop presence called WIT (Workshop Interface Technology). The defining interaction is a physical SIP desk phone; ordinary telephone calling and physical lighting controls should remain useful without the assistant.
 
-**Status (October 26, 2026):** The first infrastructure milestone is complete: Home Assistant on a private homelab host controls a test lamp through a smart outlet, and authenticated REST API ON/OFF commands were physically verified. The first HOID Python Home Assistant client and minimal CLI are implemented and tested locally with mocked responses; **the client has not yet been deployed or validated against the live lamp**. Telephone integration, speech, and LLM orchestration remain unimplemented.
+**Status (October 26, 2026):** Home Assistant controls a test lamp through a smart outlet. The first HOID Python Home Assistant client and CLI have passed 20 mocked tests on Python 3.12 and were installed successfully on the homelab host using Python 3.14. The user verified live CLI state reads, ON/OFF commands, subsequent state readback, and the lamp's physical response. **The complete telephone-driven assistant is not deployed.** SIP/Asterisk, speech, and LLM orchestration remain future work.
 
 **Public repository policy:** HOID is intentionally public for shareable application code and sanitized documentation. Agents and contributors must follow [AGENTS.md](AGENTS.md) to keep credentials, real device mappings, household topology, and runtime configuration out of public commits.
 
@@ -11,11 +11,11 @@ This repository contains HOID's initial application code and documents its archi
 ## Project documentation
 
 - [Project summary](docs/project-summary.md) — product vision, privacy and safety principles, conceptual architecture, and current direction.
-- [Home Assistant integration](docs/home-assistant-integration.md) — verified first physical-control milestone and allowlisted Python client contract.
+- [Home Assistant integration](docs/home-assistant-integration.md) — verified live Python client, device-control contract, and safety constraints.
 
 ## Next implementation milestone
 
-Deploy and manually validate the Python Home Assistant client against the approved desk lamp, including readback verification and safe failure behavior. SIP/Asterisk and voice capabilities follow separately.
+Containerize the working HOID CLI, validate its Home Assistant connectivity and lamp control from inside Docker, and keep credentials and household mappings outside version control. SIP/Asterisk and voice capabilities follow separately. No always-running HOID service is required for the current CLI.
 
 ## Python Home Assistant client
 
@@ -56,4 +56,4 @@ A successful readback confirms Home Assistant's reported state, not independent 
 
 ### Testing status
 
-The initial 17 tests passed locally under Python 3.12.15 using mocked HTTP responses and synthetic credentials. Additional regression tests cover inaccessible readback after an accepted command; run the suite again to validate these changes. Live integration and physical device validation remain outstanding.
+On October 26, 2026, all 20 mocked tests passed on Python 3.12.15. The package then installed and the CLI launched on Python 3.14.4 on the homelab host. A user-observed live smoke test returned the correct initial OFF state, verified ON and OFF after CLI commands, and matched the physical lamp's behavior. This does not establish automated tests under Python 3.14, failure-path behavior against live Home Assistant, or Docker deployment.
