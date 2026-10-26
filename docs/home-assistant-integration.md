@@ -1,28 +1,31 @@
-# Home Assistant integration — first verified capability
+# Home Assistant integration — verified Python client
 
-**As of October 19, 2026:** The underlying Home Assistant integration works, but **there is no HOID application or Python client yet**. This page is the starting contract for implementation, not a claim that HOID can currently accept commands.
+**Status (October 26, 2026):** The HOID Python client and CLI are implemented, 20 mocked tests passed on Python 3.12.15, and the user successfully ran live status, ON, and OFF commands on the homelab host under Python 3.14.4. The lamp's physical response matched Home Assistant's reported state. Telephone, speech, and LLM integration remain unimplemented.
 
-## Working end-to-end proof
+## Verified integration
 
-On the private Ubuntu/Docker homelab host, Home Assistant Container communicates locally with a Wi-Fi smart outlet through its local smart-device integration. A user authenticated from the homelab host with a Home Assistant long-lived access token, read the outlet state, issued ON and OFF REST service calls, and confirmed the physical office desk lamp responded to both commands. The final state read was `off`.
+The Python CLI uses an allowlisted logical device mapping and a runtime Home Assistant token to communicate with Home Assistant's local REST API. Home Assistant controls the office lamp through a locally integrated Wi-Fi smart outlet.
 
 ```text
-Future SIP phone → Future HOID intent router → Future allowlisted device-control client
-                                                        |
-                                                        | Home Assistant REST API
-                                                        v
-                                          Home Assistant on a private homelab host [WORKING]
-                                                        |
-                                                        | Local smart-device integration
-                                                        v
-                                          Office Desk Lamp outlet [WORKING]
+Future SIP phone → Future intent router → HOID Python client [WORKING]
+                                              |
+                                              | Home Assistant REST API
+                                              v
+                                  Home Assistant [WORKING]
+                                              |
+                                              v
+                                  Office lamp outlet [WORKING]
 ```
 
-The authoritative deployment paths, Docker/network configuration, operational runbook considerations, and host credentials **belong to the separate [homelab documentation](https://github.com/JohnMThompson/homelab/blob/main/infrastructure/home-assistant.md)**. Do not duplicate server configuration or commit any access tokens to this repository.
+**October 19:** A manual authenticated REST API proof of concept confirmed physical ON/OFF behavior.
+
+**October 26:** The HOID package installed on the host and its CLI launched on Python 3.14.4. The user reported an initial OFF state matching the physical lamp, followed by CLI output confirming ON, state ON, OFF, and state OFF; both physical transitions were observed. These are user-observed integration tests, not continuous health monitoring or automated live failure-path tests.
+
+Deployment paths, network settings, and credentials belong to the separate [homelab documentation](https://github.com/JohnMThompson/homelab/blob/main/applications/hoid.md). Do not copy household entity IDs, server addresses, tokens, or runtime configuration into this public repository.
 
 ## Illustrative entity mapping (not live configuration)
 
-The following identifiers are **synthetic examples**, not the actual household entity mapping. Actual entity IDs and device inventory belong in private runtime configuration.
+All identifiers below are synthetic.
 
 | Field | Value |
 | --- | --- |
@@ -33,47 +36,43 @@ The following identifiers are **synthetic examples**, not the actual household e
 | Entity domain | `switch` |
 | Device class | `outlet` |
 | Physical device | Example smart outlet supplying a lamp |
-| Allowed actions for MVP | Read state; turn on; turn off |
+| Allowed actions | Read state; turn on; turn off |
 
-The `switch` domain is correct for a smart outlet in Home Assistant. The outlet device class describes the hardware; it does not change the entity's API domain. A logical device name or voice alias is not itself an authorized Home Assistant entity ID.
+The `switch` domain is correct for a smart outlet. A logical device name or spoken alias is not itself an authorized Home Assistant entity ID.
 
-## First Python client — intended behavior
+## Python client contract
 
-The proposed device-control module should expose simple operations, without making telephony, speech engines, or an LLM dependencies:
+- `get_state("example_lamp")` reads Home Assistant's state.
+- `turn_on("example_lamp")` issues one authorized ON service call and checks state readback.
+- `turn_off("example_lamp")` issues one authorized OFF service call and checks state readback.
+- A device/action allowlist prevents arbitrary entity IDs or services from being forwarded to Home Assistant.
+- Typed errors distinguish authentication, missing/unavailable entities, unreachable service, and uncertain outcomes. A successful command followed by inaccessible readback is treated as uncertain rather than confidently successful.
 
-- `get_state("example_lamp")` — return the Home Assistant state or an explicit error/unavailable result.
-- `turn_on("example_lamp")` — request ON, then read back the entity state.
-- `turn_off("example_lamp")` — request OFF, then read back the entity state.
-
-Use an **explicit allowlist** mapping stable logical names to permitted Home Assistant entity IDs and actions. Never accept an arbitrary entity ID, service domain, or free-form action from an LLM or user speech and forward it unchecked.
-
-### REST endpoint shapes (sanitized examples; actual paths verified manually)
+### REST endpoint shapes (synthetic examples)
 
 - `GET /api/states/switch.example_lamp`
 - `POST /api/services/switch/turn_on` with JSON `{"entity_id":"switch.example_lamp"}`
 - `POST /api/services/switch/turn_off` with the same entity ID
 
-Home Assistant's empty `[]` response to a service call is **not** confirmation that the lamp changed state. The client must check the subsequent entity state. State readback reflects Home Assistant's reported state, not an independent electrical measurement. If an outcome is unknown, say so rather than claiming success.
+An HTTP success response or empty `[]` service response alone does not prove physical action. Readback reflects Home Assistant's reported state, not an independent electrical measurement.
 
-### Safety, privacy, and reliability constraints
+### Safety and reliability
 
-- Only low-risk, explicitly approved devices in the first iteration; no locks, alarms, garage doors, purchases, or power tools.
-- Use local HTTP access within the trusted host/LAN; do not expose the Home Assistant API publicly for HOID.
-- Read the access token from runtime secret configuration outside version control. Long-lived Home Assistant tokens inherit their user's permissions and are **not** entity-scoped by default.
-- Use reasonable connection/read timeouts; distinguish authentication, unreachable service, missing entity, unavailable state, and state-verification failure.
-- Do not silently substitute a different device. Avoid blind retries after ambiguous results; read state before considering a repeat.
-- No conversation transcripts or voice recordings are needed for this client. Operational logs should omit tokens, authorization headers, and private content.
-- Keep manual lamp operation and the Home Assistant UI functional independently of HOID.
+- Only low-risk, explicitly approved devices; no locks, alarms, garage doors, purchases, or power tools.
+- Use local Home Assistant connectivity, not a public API endpoint.
+- Load the token from a runtime environment variable, outside Git. Long-lived tokens inherit their Home Assistant user's permissions; they are not entity-scoped by default.
+- Use bounded connection/read and state-verification timeouts. Never blindly repeat an action after an ambiguous result.
+- Do not silently substitute devices or allow an LLM to invoke arbitrary actions.
+- Do not persist audio, transcripts, or conversational memory for this client. Omit tokens and authorization headers from logs.
+- Manual lamp control and Home Assistant must remain usable independently of HOID.
 
-## Definition of done for first code milestone (not yet implemented)
+## Validation status
 
-1. Local Python client implements the three operations against the configured Home Assistant endpoint.
-2. Tests use a fake HTTP API or mocks and cover success, rejected/unknown device, timeouts, unavailable entity, and unsuccessful verification.
-3. A real integration smoke test toggles the desk lamp and verifies reported state and physical response.
-4. No token appears in code, repository history, test output, or logs.
-5. Errors are returned as explicit outcomes suitable for a short spoken response.
-6. Documentation clearly distinguishes local proof of concept from deployed HOID service.
+- **Passed:** 20 mocked tests under Python 3.12.15, including uncertain-outcome readback regression coverage.
+- **Passed:** Host package installation and CLI startup under Python 3.14.4.
+- **Passed:** Live read-only state check, ON/OFF service calls, readback, and user-observed physical lamp behavior.
+- **Not yet validated:** Automated test suite under Python 3.14, live failure cases, container networking, and Docker execution.
 
 ## Next interfaces
 
-A deterministic intent router will eventually translate an utterance such as “turn on the example lamp” into an approved logical device/action pair. Asterisk, local speech recognition, text-to-speech, and an Ollama-based fallback remain separate future components. The initial API module should be independently testable without any of them.
+Containerize the client and repeat the live smoke test from Docker. Later, a deterministic intent router will translate spoken requests into approved logical device/action pairs. Asterisk, local speech recognition, TTS, and an Ollama fallback remain separate future components.
