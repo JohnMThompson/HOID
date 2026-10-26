@@ -100,6 +100,20 @@ def test_uncertain_verification_when_state_unavailable():
         c.turn_on("desk_lamp")
 
 
+
+@pytest.mark.parametrize("status_code", [401, 403, 404])
+def test_post_command_verification_access_failure_is_uncertain(status_code):
+    c, calls = client([
+        httpx.Response(200, json=[]),
+        httpx.Response(status_code, text="synthetic-token"),
+    ])
+    with pytest.raises(OutcomeUncertain) as exc:
+        c.turn_on("desk_lamp")
+    assert "synthetic-token" not in str(exc.value)
+    assert [request.method for request in calls] == ["POST", "GET"]
+
+
+
 def test_delayed_verification_succeeds():
     c, _ = client([], handler=lambda req, i: (httpx.Response(200, json=[]) if i == 1 else
                                               state("off" if i == 2 else "on")))
