@@ -48,13 +48,21 @@ def load_config(path: str | Path | None = None, *, environ: Mapping[str, str] | 
 
     api_url = env.get("HOID_HA_URL", raw.get("api_url"))
     token = env.get("HOID_HA_TOKEN")
+    token_file = env.get("HOID_HA_TOKEN_FILE")
+    if token and token_file:
+        raise ConfigurationError("Set only one Home Assistant token source.")
+    if token_file:
+        try:
+            token = Path(token_file).read_text(encoding="utf-8").strip()
+        except OSError as exc:
+            raise ConfigurationError("Home Assistant token file could not be read.") from exc
     if not isinstance(api_url, str):
         raise ConfigurationError("Home Assistant API URL is missing.")
     parts = urlsplit(api_url)
     if parts.scheme not in {"http", "https"} or not parts.netloc or parts.username or parts.password:
         raise ConfigurationError("Home Assistant API URL is invalid.")
     if not token:
-        raise ConfigurationError("Home Assistant token is missing from HOID_HA_TOKEN.")
+        raise ConfigurationError("Home Assistant token is missing; set HOID_HA_TOKEN or HOID_HA_TOKEN_FILE.")
 
     raw_devices = raw.get("devices")
     if not isinstance(raw_devices, dict) or not raw_devices:
