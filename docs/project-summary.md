@@ -114,7 +114,7 @@ Future garage SIP phone (WIT / ext. 102) ─┘                    │
 | SIP phone | Physical calling, handset/speakerphone, ringing | SIP desk phone selected for initial testing; delivery and provisioning not verified as of October 19 |
 | PBX | SIP registration, call routing, RTP/media, internal extensions | Asterisk is preferred; selection and deployment not validated |
 | HOID orchestrator | Session management, persona/context, tool routing, notifications, memory policy | Conceptual |
-| STT / TTS | Speech recognition and synthesis | Local processing selected as direction; engines and voice deferred to prototyping |
+| STT / TTS | Speech recognition and synthesis | Local Whisper and Kokoro (Lewis) verified for recorded-file CLI; telephone audio not integrated |
 | Local LLM | Conversational reasoning | Ollama selected as initial runtime; model and compute capacity remain to be validated |
 | Home Assistant | Source of truth and abstraction for smart devices/automation | Deployed on the private homelab host; first lamp and authenticated REST API ON/OFF manually verified October 19 |
 
