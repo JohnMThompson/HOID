@@ -21,7 +21,7 @@ class Intent:
 _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"(?:turn|switch) (?:the )?desk lamp on|turn on (?:the )?desk lamp|switch on (?:the )?desk lamp"), "turn_on"),
     (re.compile(r"(?:turn|switch) (?:the )?desk lamp off|turn off (?:the )?desk lamp|switch off (?:the )?desk lamp"), "turn_off"),
-    (re.compile(r"(?:is (?:the )?desk lamp (?:on|off)|what(?: is|'s) (?:the )?desk lamp(?:'s)? (?:status|state)|(?:check|get) (?:the )?desk lamp (?:status|state))"), "get_state"),
+    (re.compile(r"(?:is (?:the )?desk lamp (?:on|off)|what(?: is|'s) (?:the )?desk lamp(?:'s)? (?:status|state)|(?:check|get) (?:the )?desk lamp (?:status|state))\\??"), "get_state"),
 )
 
 
