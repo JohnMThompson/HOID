@@ -26,6 +26,7 @@ def synthesize_to_wav(text, output_path, *, model_path, voices_path, voice="bm_l
         except ImportError as exc:
             raise SpeechError("Install HOID with the tts extra.") from exc
         engine_factory = Kokoro
+    created = False
     try:
         engine = engine_factory(str(model_path), str(voices_path))
         samples, sample_rate = engine.create(text, voice=voice, speed=speed, lang="en-gb")
@@ -35,6 +36,7 @@ def synthesize_to_wav(text, output_path, *, model_path, voices_path, voice="bm_l
             raise ValueError("Invalid audio")
         pcm = (np.clip(audio, -1, 1) * 32767).astype("<i2")
         with output.open("xb") as stream:
+            created = True
             with wave.open(stream, "wb") as wav:
                 wav.setnchannels(1)
                 wav.setsampwidth(2)
@@ -42,4 +44,6 @@ def synthesize_to_wav(text, output_path, *, model_path, voices_path, voice="bm_l
                 wav.writeframes(pcm.tobytes())
         return output
     except Exception as exc:
+        if created:
+            output.unlink(missing_ok=True)
         raise SpeechError("Speech synthesis failed.") from exc
