@@ -54,3 +54,28 @@ def test_transcribe_cli_failure(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == "Error: Audio transcription failed.\n"
+
+
+def test_ask_cli_success(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "load_config", lambda: object())
+    monkeypatch.setattr(cli, "HomeAssistantClient", FakeClient)
+    assert cli.main(["ask", "Turn on the desk lamp."]) == 0
+    assert capsys.readouterr().out == "The desk lamp is verified on.\n"
+
+
+def test_ask_cli_unsupported_never_loads_config(monkeypatch, capsys):
+    def fail():
+        raise AssertionError("must not load config for unsupported requests")
+
+    monkeypatch.setattr(cli, "load_config", fail)
+    assert cli.main(["ask", "Don't turn on the desk lamp"]) == 2
+    assert capsys.readouterr().out == "I don't recognize that request.\n"
+
+
+def test_ask_cli_preserves_client_error(monkeypatch, capsys):
+    def fail():
+        raise ConfigurationError("safe configuration error")
+
+    monkeypatch.setattr(cli, "load_config", fail)
+    assert cli.main(["ask", "Turn on the desk lamp"]) == 1
+    assert capsys.readouterr().err == "Error: safe configuration error\n"
