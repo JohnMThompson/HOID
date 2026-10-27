@@ -33,3 +33,24 @@ def test_cli_failure_exit_code(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == "Error: safe configuration error\n"
+
+
+def test_transcribe_cli(monkeypatch, capsys):
+    from hoid import stt
+
+    monkeypatch.setattr(stt, "transcribe_file", lambda path: "Turn on the desk lamp.")
+    assert cli.main(["transcribe", "sample.wav"]) == 0
+    assert capsys.readouterr().out == "Turn on the desk lamp.\n"
+
+
+def test_transcribe_cli_failure(monkeypatch, capsys):
+    from hoid import stt
+
+    def fail(_path):
+        raise stt.TranscriptionError("Audio transcription failed.")
+
+    monkeypatch.setattr(stt, "transcribe_file", fail)
+    assert cli.main(["transcribe", "missing.wav"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "Error: Audio transcription failed.\n"
