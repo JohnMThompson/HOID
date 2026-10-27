@@ -79,3 +79,60 @@ def test_ask_cli_preserves_client_error(monkeypatch, capsys):
     monkeypatch.setattr(cli, "load_config", fail)
     assert cli.main(["ask", "Turn on the desk lamp"]) == 1
     assert capsys.readouterr().err == "Error: safe configuration error\n"
+
+def test_ask_audio_dry_run_never_loads_config(monkeypatch, capsys):
+    from hoid import stt
+
+    monkeypatch.setattr(stt, "transcribe_file", lambda _: "Turn on the desk lamp.")
+    monkeypatch.setattr(cli, "load_config", lambda: (_ for _ in ()).throw(AssertionError("unexpected config load")))
+    assert cli.main(["ask-audio", "sample.wav", "--dry-run"]) == 0
+    assert capsys.readouterr().out == "Recognized: desk_lamp / turn_on (dry run; no action taken)\n"
+
+
+def test_ask_audio_status(monkeypatch, capsys):
+    from hoid import stt
+
+    monkeypatch.setattr(stt, "transcribe_file", lambda _: "Is the desk lamp on?")
+    monkeypatch.setattr(cli, "load_config", lambda: object())
+    monkeypatch.setattr(cli, "HomeAssistantClient", FakeClient)
+    assert cli.main(["ask-audio", "sample.wav"]) == 0
+    assert capsys.readouterr().out == "The desk lamp is on.\n"
+
+
+def test_ask_audio_unsupported_never_loads_config(monkeypatch, capsys):
+    from hoid import stt
+
+    monkeypatch.setattr(stt, "transcribe_file", lambda _: "Don't turn on the desk lamp.")
+    monkeypatch.setattr(cli, "load_config", lambda: (_ for _ in ()).throw(AssertionError("unexpected config load")))
+    assert cli.main(["ask-audio", "sample.wav"]) == 2
+    assert capsys.readouterr().out == "I don't recognize that request.\n"
+
+
+def test_ask_audio_empty_transcript(monkeypatch, capsys):
+    from hoid import stt
+
+    monkeypatch.setattr(stt, "transcribe_file", lambda _: "   ")
+    monkeypatch.setattr(cli, "load_config", lambda: (_ for _ in ()).throw(AssertionError("unexpected config load")))
+    assert cli.main(["ask-audio", "sample.wav"]) == 2
+    assert capsys.readouterr().out == "I couldn't hear a command.\n"
+
+
+def test_ask_audio_transcription_error(monkeypatch, capsys):
+    from hoid import stt
+
+    def fail(_):
+        raise stt.TranscriptionError("Audio transcription failed.")
+
+    monkeypatch.setattr(stt, "transcribe_file", fail)
+    assert cli.main(["ask-audio", "missing.wav"]) == 1
+    assert capsys.readouterr().err == "Error: Audio transcription failed.\n"
+
+
+def test_ask_audio_action(monkeypatch, capsys):
+    from hoid import stt
+
+    monkeypatch.setattr(stt, "transcribe_file", lambda _: "Turn off the desk lamp.")
+    monkeypatch.setattr(cli, "load_config", lambda: object())
+    monkeypatch.setattr(cli, "HomeAssistantClient", FakeClient)
+    assert cli.main(["ask-audio", "sample.wav"]) == 0
+    assert capsys.readouterr().out == "The desk lamp is verified off.\n"
