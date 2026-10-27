@@ -1,6 +1,6 @@
 # HOID — Project Summary
 
-> **Status (October 19, 2026):** Home Assistant and one physical smart-outlet control path are deployed and manually verified on the private homelab host. HOID application code, SIP/PBX, speech, and inference remain unimplemented.
+> **Status (October 26, 2026):** Home Assistant desk-lamp control and the HOID allowlisted Python client are physically verified. Local Whisper transcription, deterministic intent routing, and Kokoro speech synthesis (Lewis voice) have been integrated into a successful recorded-file voice → action → spoken-response test (PRs #12–#14). This is **not** live SIP telephony or a continuously running assistant.
 > **Purpose:** Public overview of the project direction and planning status. This is a living summary, **not** a complete implementation specification.
 
 ## 1. Project overview
@@ -11,7 +11,7 @@ The goal is not to recreate a generic always-listening smart speaker. HOID shoul
 
 The project takes playful inspiration from Hoid/Wit in Brandon Sanderson's Cosmere, but it is an independent personal project, not an official or affiliated adaptation. The acronym and practical functionality should make sense without knowing the reference. Personality is a subtle layer over a reliable assistant, not an excuse for excessive roleplay.
 
-The HOID application remains in the planning and documentation phase. Its first external dependency—Home Assistant controlling the office desk lamp—has been deployed and verified independently. Keep candidate technologies and hardware distinct from established direction. See [Home Assistant integration](home-assistant-integration.md) for the verified capability and the proposed client contract.
+HOID now has a working local Python CLI and a recorded-file speech-to-action-to-speech prototype. Its first external dependency—Home Assistant controlling the office desk lamp—has been deployed and verified. Keep candidate technologies and hardware distinct from established direction. See [Home Assistant integration](home-assistant-integration.md) for the verified capability and the proposed client contract.
 
 ## 2. Experience and product vision
 
@@ -114,7 +114,7 @@ Future garage SIP phone (WIT / ext. 102) ─┘                    │
 | SIP phone | Physical calling, handset/speakerphone, ringing | SIP desk phone selected for initial testing; delivery and provisioning not verified as of October 19 |
 | PBX | SIP registration, call routing, RTP/media, internal extensions | Asterisk is preferred; selection and deployment not validated |
 | HOID orchestrator | Session management, persona/context, tool routing, notifications, memory policy | Conceptual |
-| STT / TTS | Speech recognition and synthesis | Local processing selected as direction; engines and voice deferred to prototyping |
+| STT / TTS | Speech recognition and synthesis | Local Whisper and Kokoro (Lewis) verified for recorded-file CLI; telephone audio not integrated |
 | Local LLM | Conversational reasoning | Ollama selected as initial runtime; model and compute capacity remain to be validated |
 | Home Assistant | Source of truth and abstraction for smart devices/automation | Deployed on the private homelab host; first lamp and authenticated REST API ON/OFF manually verified October 19 |
 
@@ -225,7 +225,7 @@ Capabilities above are product ideas, **not a committed backlog**.
 
 ### Established direction
 
-- Home Assistant Container is deployed on the private homelab host, and local API control of the first lamp was physically verified October 19. A HOID software client has not been implemented.
+- Home Assistant Container is deployed on the private homelab host, and local API control of the first lamp was physically verified October 19. An allowlisted HOID Python client has been implemented and live-tested.
 - The SIP desk phone is selected for initial SIP phone testing; delivery/provisioning are pending verification.
 - The project and repository are named **HOID**.
 - The primary voice interaction is a physical SIP desk phone, not an always-listening smart speaker.
@@ -243,7 +243,7 @@ Capabilities above are product ideas, **not a committed backlog**.
 - No persistent conversational memory, audio recording, or transcript retention in the initial architecture. Active session context is discarded at hangup.
 - Low-risk household access does not require speaker authentication; sensitive actions are outside initial scope.
 - Fail safely when dependencies or integrations are unavailable; never claim unconfirmed success.
-- Local STT/TTS processing is the initial direction; engine and voice selection are deferred to prototyping.
+- Local STT/TTS is implemented for recorded-file CLI workflows using Whisper and Kokoro (Lewis voice); live telephone streaming is still unimplemented.
 - Ollama is the selected initial LLM runtime; the model and required compute capacity remain open.
 - Prefer the private homelab host for the PBX; keep the PBX independently deployable from HOID.
 
@@ -259,7 +259,7 @@ Capabilities above are product ideas, **not a committed backlog**.
 
 - Validate the preferred PBX and select a SIP/RTP bridge through a working phone/audio prototype.
 - Select the LLM, quantization, and compute capacity after verifying the host and benchmarking local inference.
-- Select local STT/TTS engines, voice, and audio pipeline through prototyping.
+- Extend the validated local Whisper/Kokoro recorded-file pipeline to telephone audio; measure complete call latency.
 - Validate the phone model, provisioning, and off-hook behavior when phone hardware is available.
 - Define detailed notification delivery, timeout, health-check, and retry behavior during prototyping.
 - Extend smart lighting beyond the verified first lamp outlet only after selecting and validating additional hardware.
@@ -275,7 +275,7 @@ Capabilities above are product ideas, **not a committed backlog**.
 1. **Document the concept:** Repository README, this summary, vision, design principles, and lightweight decision records.
 2. **Validate telephony:** Use the preferred PBX candidate on the private homelab host to verify ordinary calling between two SIP extensions before adding AI. This is separate from the initial assistant scope, which targets one SIP phone. WIT and multi-phone deployment are secondary.
 3. **Prototype assistant calls:** Connect a minimal voice assistant endpoint to the PBX; measure end-to-end latency.
-4. **Introduce controlled home actions:** Home Assistant + first lamp + direct REST API proof **completed October 19, 2026**; the HOID allowlisted Python client and voice-driven control remain future work.
+4. **Introduce controlled home actions:** Home Assistant + first lamp + direct REST API proof **completed October 19, 2026**; the allowlisted Python client and recorded-file voice-driven control were subsequently validated October 26, 2026.
 5. **Refine character and reliability:** Persona, short responses, session lifecycle, logging, failure handling, and notifications.
 6. **Extend to WIT:** Garage connectivity, second endpoint, workshop context and safe tool permissions.
 
@@ -296,3 +296,8 @@ Milestones are sequencing ideas, not dates or commitments. Hardware selection an
 ---
 
 *Originally drafted October 8, 2026; updated October 19, 2026 to reflect verified Home Assistant infrastructure and the selected initial phone.*
+
+
+## Recorded-file voice milestone (verified October 26, 2026)
+
+The CLI can transcribe an existing recording locally, recognize an allowlisted desk-lamp intent, execute and verify the Home Assistant action, and optionally synthesize the verified response as a WAV file. The operator confirmed the physical action and heard the generated response. Speech output is secondary to verified action: synthesis failure does not undo an already completed action. No persistent service, live microphone session, SIP audio path, or LLM reasoning was validated by this test. See [spoken confirmation](spoken-confirmation.md).
