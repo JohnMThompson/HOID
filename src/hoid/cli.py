@@ -25,6 +25,12 @@ def main(argv: list[str] | None = None) -> int:
     audio = targets.add_parser("ask-audio", help="transcribe and interpret a recorded command")
     audio.add_argument("audio_file", help="path to an existing audio file")
     audio.add_argument("--dry-run", action="store_true", help="show recognized intent without contacting Home Assistant")
+    audio.add_argument("--speak", action="store_true", help="synthesize the verified response to a WAV file")
+    audio.add_argument("--output", help="output WAV path (required with --speak)")
+    audio.add_argument("--model", help="local Kokoro ONNX model (required with --speak)")
+    audio.add_argument("--voices", help="local Kokoro voices file (required with --speak)")
+    audio.add_argument("--voice", default="bm_lewis")
+    audio.add_argument("--speed", type=float, default=1.0)
     speech = targets.add_parser("speak", help="synthesize text to a local WAV file")
     speech.add_argument("text")
     speech.add_argument("--output", required=True)
@@ -33,6 +39,13 @@ def main(argv: list[str] | None = None) -> int:
     speech.add_argument("--voice", default="bm_lewis")
     speech.add_argument("--speed", type=float, default=1.0)
     args = parser.parse_args(argv)
+    if args.target == "ask-audio":
+        if args.speak and (not args.output or not args.model or not args.voices):
+            parser.error("--speak requires --output, --model, and --voices")
+        if not args.speak and (args.output or args.model or args.voices):
+            parser.error("--output, --model, and --voices require --speak")
+        if args.speak and args.dry_run:
+            parser.error("--speak cannot be combined with --dry-run")
 
     if args.target == "speak":
         from .tts import SpeechError, synthesize_to_wav
@@ -86,6 +99,13 @@ def main(argv: list[str] | None = None) -> int:
             with HomeAssistantClient(config) as client:
                 response = process_text(text, client)
             print(response.text)
+            if args.target == "ask-audio" and args.speak:
+                from .tts import SpeechError, synthesize_to_wav
+                try:
+                    path = synthesize_to_wav(response.text, args.output, model_path=args.model, voices_path=args.voices, voice=args.voice, speed=args.speed)
+                    print(f"Speech written to {path}.")
+                except SpeechError as exc:
+                    print(f"Warning: action completed, but speech failed: {exc}", file=sys.stderr)
             return 0
         except HoidError as exc:
             print(f"Error: {exc}", file=sys.stderr)
