@@ -25,7 +25,25 @@ def main(argv: list[str] | None = None) -> int:
     audio = targets.add_parser("ask-audio", help="transcribe and interpret a recorded command")
     audio.add_argument("audio_file", help="path to an existing audio file")
     audio.add_argument("--dry-run", action="store_true", help="show recognized intent without contacting Home Assistant")
+    speech = targets.add_parser("speak", help="synthesize text to a local WAV file")
+    speech.add_argument("text")
+    speech.add_argument("--output", required=True)
+    speech.add_argument("--model", required=True, help="local Kokoro ONNX model file")
+    speech.add_argument("--voices", required=True, help="local Kokoro voices file")
+    speech.add_argument("--voice", default="bm_lewis")
+    speech.add_argument("--speed", type=float, default=1.0)
     args = parser.parse_args(argv)
+
+    if args.target == "speak":
+        from .tts import SpeechError, synthesize_to_wav
+
+        try:
+            path = synthesize_to_wav(args.text, args.output, model_path=args.model, voices_path=args.voices, voice=args.voice, speed=args.speed)
+            print(f"Speech written to {path}.")
+            return 0
+        except SpeechError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
 
     if args.target == "transcribe":
         from .stt import TranscriptionError, transcribe_file
