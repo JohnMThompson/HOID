@@ -27,7 +27,7 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
 
 def parse_intent(text: str) -> Intent | None:
     """Return an allowlisted intent, or None; never infer from a substring."""
-    normalized = re.sub(r"\s+", " ", text.strip().lower()).rstrip(".?!").strip()
+    normalized = re.sub(r"\s+", " ", text.strip().lower()).rstrip(".!").strip()
     for pattern, action in _PATTERNS:
         if pattern.fullmatch(normalized):
             return Intent(device="desk_lamp", action=action)
