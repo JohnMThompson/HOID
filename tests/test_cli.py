@@ -136,3 +136,29 @@ def test_ask_audio_action(monkeypatch, capsys):
     monkeypatch.setattr(cli, "HomeAssistantClient", FakeClient)
     assert cli.main(["ask-audio", "sample.wav"]) == 0
     assert capsys.readouterr().out == "The desk lamp is verified off.\n"
+
+
+def test_speak_cli(monkeypatch, capsys, tmp_path):
+    from hoid import tts
+
+    output = tmp_path / "speech.wav"
+    def fake_speech(text, path, **kwargs):
+        assert text == "Hello"
+        assert path == str(output)
+        assert kwargs["voice"] == "bm_lewis"
+        return output
+
+    monkeypatch.setattr(tts, "synthesize_to_wav", fake_speech)
+    assert cli.main(["speak", "Hello", "--model", "model.onnx", "--voices", "voices.bin", "--output", str(output)]) == 0
+    assert capsys.readouterr().out == f"Speech written to {output}.\n"
+
+
+def test_speak_cli_error(monkeypatch, capsys):
+    from hoid import tts
+
+    def fail(*args, **kwargs):
+        raise tts.SpeechError("Speech synthesis failed.")
+
+    monkeypatch.setattr(tts, "synthesize_to_wav", fail)
+    assert cli.main(["speak", "Hello", "--model", "model.onnx", "--voices", "voices.bin", "--output", "/tmp/speech.wav"]) == 1
+    assert capsys.readouterr().err == "Error: Speech synthesis failed.\n"
