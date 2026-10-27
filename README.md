@@ -2,7 +2,7 @@
 
 HOID (Home Office Interface Device) is a local-first, personality-driven assistant project for a home office, with a possible future workshop presence called WIT (Workshop Interface Technology). The defining interaction is a physical SIP desk phone; ordinary telephone calling and physical lighting controls should remain useful without the assistant.
 
-**Status (October 26, 2026):** The Home Assistant integration, HOID Python CLI, and one-shot Docker CLI have been validated on the private homelab host. The user confirmed physical desk-lamp ON/OFF transitions from both the host CLI and Docker; state reads matched. A private, Git-ignored Compose `.env` file supplies the host token-file path and has been tested. SIP/Asterisk, speech, and LLM orchestration remain planned, not deployed.
+**Status (October 26, 2026):** The allowlisted Home Assistant client and desk-lamp control are physically verified. Local recorded-audio transcription (Whisper), deterministic intent routing, and offline speech synthesis (Kokoro, Lewis voice) have been integrated and successfully exercised end to end on the homelab host through `hoid ask-audio --speak` (PRs #12–#14). This is a recorded-file CLI workflow, **not** a live telephone session or persistent assistant service. Asterisk/SIP and LLM orchestration remain planned.
 
 **Public repository policy:** HOID is intentionally public for shareable application code and sanitized documentation. Agents and contributors must follow [AGENTS.md](AGENTS.md) to keep credentials, real device mappings, household topology, and runtime configuration out of public commits.
 
@@ -12,10 +12,11 @@ This repository contains HOID's initial application code and documents its archi
 
 - [Project summary](docs/project-summary.md) — product vision, privacy and safety principles, conceptual architecture, and current direction.
 - [Home Assistant integration](docs/home-assistant-integration.md) — verified first physical-control milestone and allowlisted Python client contract.
+- [Spoken confirmation](docs/spoken-confirmation.md) — recorded command → verified action → local WAV response.
 
 ## Next implementation milestone
 
-Next: prepare independent Asterisk/SIP telephone integration and a test extension. Voice capabilities follow separately. The Docker Compose build currently requires a token-file path even when only building the image; simplifying this is planned, not implemented.
+Prototype Asterisk/SIP registration and telephone audio transport separately from the already-working recorded-file speech pipeline. The Docker Compose build currently requires a token-file path even when only building the image; simplifying this remains planned.
 
 ## Python Home Assistant client
 
