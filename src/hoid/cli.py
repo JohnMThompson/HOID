@@ -20,6 +20,8 @@ def main(argv: list[str] | None = None) -> int:
     commands.add_parser("off")
     transcription = targets.add_parser("transcribe", help="transcribe an audio file locally")
     transcription.add_argument("audio_file", help="path to an existing audio file")
+    ask = targets.add_parser("ask", help="interpret a supported text request")
+    ask.add_argument("text", help="request text in quotation marks")
     args = parser.parse_args(argv)
 
     if args.target == "transcribe":
@@ -29,6 +31,23 @@ def main(argv: list[str] | None = None) -> int:
             print(transcribe_file(args.audio_file))
             return 0
         except TranscriptionError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+
+    if args.target == "ask":
+        from .intents import parse_intent
+        from .requests import process_text
+
+        if parse_intent(args.text) is None:
+            print("I don\'t recognize that request.")
+            return 2
+        try:
+            config = load_config()
+            with HomeAssistantClient(config) as client:
+                response = process_text(args.text, client)
+            print(response.text)
+            return 0
+        except HoidError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             return 1
 
