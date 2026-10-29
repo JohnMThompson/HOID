@@ -80,6 +80,21 @@ response = {
 
 The `source` and session information are metadata for authorization, routing, and response presentation; device-specific behavior must not leak into tool execution. These dictionaries are illustrative, not stable Python types or a published API. A response must distinguish verified success, failure, and uncertain outcomes. A transcription is untrusted input; it cannot authorize arbitrary device identifiers or actions.
 
+## Home Assistant-first automation principle
+
+**Prefer native Home Assistant capabilities before building custom HOID tools or services.** HOID is a conversational and telephone interface to household capabilities, not a replacement home-automation platform. For each new action or automation, evaluate options in this order:
+
+1. **Native Home Assistant capability:** Use an existing integration, helper, entity, service/action, or script where it meets the need.
+2. **Home Assistant orchestration:** Combine existing capabilities with HA automations and events rather than recreating scheduling or state management in HOID.
+3. **Small HOID integration:** Implement only the missing boundary capability (for example, initiating a SIP call through Asterisk).
+4. **Custom HOID subsystem:** Build and maintain a separate tool or service only when Home Assistant cannot reasonably satisfy the requirement.
+
+**Ownership boundary:** Home Assistant owns household device state, timers, and automation where practical. HOID owns conversational interpretation, telephone interaction, request authorization, and adapters for capabilities Home Assistant does not provide. Keep approved actions and verified outcomes behind the existing deterministic control boundary; an LLM must not receive unrestricted HA access.
+
+**Timer example (planned):** Start a Home Assistant Timer helper from an approved HOID request; use the `timer.finished` event and HA automation to request an outbound HOID/Asterisk notification. HOID handles delivery and the agreed policy of one retry 20 seconds after an unanswered attempt. A single Timer helper cannot represent multiple concurrent countdowns; revisit that requirement before expanding the prototype. HA timer completion events are not replayed for expirations that occur while HA is offline, so reliability requirements may eventually justify additional persistence or recovery logic.
+
+This principle favors reuse, lower maintenance, and additive automation: physical controls and independent PBX operation must continue to work without HOID.
+
 ## Privacy, safety, and failure behavior
 
 - No default audio recording, transcript retention, or persistent conversational memory. Dispose of session media and text when the session ends.
