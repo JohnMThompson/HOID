@@ -2,7 +2,7 @@
 
 HOID (Home Office Interface Device) is a local-first, personality-driven assistant project for a home office, with a possible future workshop presence called WIT (Workshop Interface Technology). The defining interaction is a physical SIP desk phone; ordinary telephone calling and physical lighting controls should remain useful without the assistant.
 
-**Status (October 26, 2026):** The allowlisted Home Assistant client and desk-lamp control are physically verified. Local recorded-audio transcription (Whisper), deterministic intent routing, and offline speech synthesis (Kokoro, Lewis voice) have been integrated and successfully exercised end to end on the homelab host through `hoid ask-audio --speak` (PRs #12–#14). This is a recorded-file CLI workflow, **not** a live telephone session or persistent assistant service. Asterisk/SIP and LLM orchestration remain planned.
+**Status (November 6, 2026):** A locally deployed SIP telephone assistant is operational and has been validated in live calls. A Cisco SPA303 registers with Asterisk; an experimental Home Assistant Assist call path supports multi-turn speech conversation, local speech recognition and synthesis, and a verified voice command controlling the office desk lamp. A dedicated physical line key initiates a call with either speakerphone or handset audio. The earlier recorded-file CLI remains available. **Important:** the live Asterisk/FastAGI Assist scripts and deployment are currently host-local and may not be represented by this repository's source tree; do not treat this README as a reproducible deployment guide for that path.
 
 **Public repository policy:** HOID is intentionally public for shareable application code and sanitized documentation. Agents and contributors must follow [AGENTS.md](AGENTS.md) to keep credentials, real device mappings, household topology, and runtime configuration out of public commits.
 
@@ -13,10 +13,11 @@ This repository contains HOID's initial application code and documents its archi
 - [Project summary](docs/project-summary.md) — product vision, privacy and safety principles, conceptual architecture, and current direction.
 - [Home Assistant integration](docs/home-assistant-integration.md) — verified first physical-control milestone and allowlisted Python client contract.
 - [Spoken confirmation](docs/spoken-confirmation.md) — recorded command → verified action → local WAV response.
+- [Telephone Assist MVP](docs/telephone-assist-mvp.md) — live-verified phone experience, component boundaries, privacy, and deployment/source synchronization notes.
 
 ## Next implementation milestone
 
-Prototype Asterisk/SIP registration and telephone audio transport separately from the already-working recorded-file speech pipeline. The Docker Compose build currently requires a token-file path even when only building the image; simplifying this remains planned.
+Reconcile and review the host-local FastAGI/Assist implementation against the public source tree, sanitize it for publication, and publish tests and generic configuration examples in a separate code PR. Then instrument stage-level latency without recording audio or transcript content. Preserve the working phone service while iterating. The Docker Compose CLI build's token-file-path requirement is still a separate cleanup task.
 
 ## Python Home Assistant client
 
