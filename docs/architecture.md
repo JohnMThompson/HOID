@@ -1,6 +1,6 @@
 # HOID architecture — interface-agnostic, voice-first
 
-**Status: October 26, 2026.** This is an architectural direction and an inventory of verified code, not a claim that a voice assistant is already deployed. See [project summary](project-summary.md) for product principles and [Home Assistant integration](home-assistant-integration.md) for the verified device-control boundary.
+**Status: November 6, 2026.** A separate host-local telephone/Assist prototype has been live-validated. The architectural target and code inventory below largely describe the public source tree, which has not yet been reconciled with the running FastAGI scripts. See [Telephone Assist MVP](telephone-assist-mvp.md). See [project summary](project-summary.md) for product principles and [Home Assistant integration](home-assistant-integration.md) for the verified device-control boundary.
 
 ## Guiding principle
 
@@ -10,7 +10,7 @@ HOID is **interface-agnostic by architecture and voice-first by experience**. It
 
 Voice-first does **not** mean always listening. Sessions are deliberate, with no default ambient microphone monitoring or persistent audio, transcript, or conversational-memory storage.
 
-## Conceptual flow (target, not yet implemented)
+## Conceptual flow (target architecture; partly validated through a separate host-local implementation)
 
 ```text
 SIP phone -> Asterisk -----------+
@@ -34,9 +34,11 @@ CLI / text ----------------------+                           |
                                                                phone / speaker
 ```
 
-Asterisk owns SIP registration, calls, and media transport, not assistant reasoning. An eventual Asterisk-to-HOID audio adapter may use ARI and External Media, but that mechanism is **not selected or tested**. Ordinary telephone calling should continue without HOID.
+Asterisk owns SIP registration, calls, and media transport, not assistant reasoning. Live prototype calls now use a FastAGI telephone adapter with Home Assistant Assist. ARI and External Media remain alternate designs, not the mechanism used by the verified telephone prototype. Ordinary telephone calling should continue without HOID.
 
 Audio adapters will normalize media for speech recognition. A working assumption for the future STT boundary is mono 16-bit PCM at 16 kHz; this is a proposed internal format, not a deployed contract. Telephone audio may require decoding and resampling. Speech synthesis output likewise requires conversion for its destination. Neither conversion belongs in the assistant core.
+
+The table and code review below describe the repository's original application modules; they do **not** inventory all running host-local scripts. See the telephone MVP document for the verified deployed path and pending source synchronization.
 
 ## Responsibilities and boundaries
 
