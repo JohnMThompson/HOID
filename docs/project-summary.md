@@ -1,6 +1,6 @@
 # HOID — Project Summary
 
-> **Status (October 26, 2026):** Home Assistant desk-lamp control and the HOID allowlisted Python client are physically verified. Local Whisper transcription, deterministic intent routing, and Kokoro speech synthesis (Lewis voice) have been integrated into a successful recorded-file voice → action → spoken-response test (PRs #12–#14). This is **not** live SIP telephony or a continuously running assistant.
+> **Status (November 6, 2026):** Live telephone calls through Asterisk and a host-local FastAGI/Home Assistant Assist integration are verified, including multi-turn local speech interaction, lamp control, farewell hangup, and a dedicated SPA303 speed-dial key. Public source synchronization is still pending; see [Telephone Assist MVP](telephone-assist-mvp.md).
 > **Purpose:** Public overview of the project direction and planning status. This is a living summary, **not** a complete implementation specification.
 
 ## 1. Project overview
@@ -11,14 +11,14 @@ The goal is not to recreate a generic always-listening smart speaker. HOID shoul
 
 The project takes playful inspiration from Hoid/Wit in Brandon Sanderson's Cosmere, but it is an independent personal project, not an official or affiliated adaptation. The acronym and practical functionality should make sense without knowing the reference. Personality is a subtle layer over a reliable assistant, not an excuse for excessive roleplay.
 
-HOID now has a working local Python CLI and a recorded-file speech-to-action-to-speech prototype. Its first external dependency—Home Assistant controlling the office desk lamp—has been deployed and verified. Keep candidate technologies and hardware distinct from established direction. See [Home Assistant integration](home-assistant-integration.md) for the verified capability and the proposed client contract.
+HOID has a working local Python CLI and a recorded-file speech-to-action-to-speech prototype. A separate host-local telephone/Assist prototype has now been exercised successfully; its current implementation is not yet confirmed to be synchronized with this public source tree. Its first external dependency—Home Assistant controlling the office desk lamp—has been deployed and verified. Keep candidate technologies and hardware distinct from established direction. See [Home Assistant integration](home-assistant-integration.md) for the verified capability and the proposed client contract.
 
 ## 2. Experience and product vision
 
 ### Office: HOID
 
 - A physical SIP desk phone in the home office is the defining voice interface.
-- A call to the assistant starts an intentional session; the exact off-hook dialing behavior remains to be validated with phone hardware.
+- A call to the assistant starts an intentional session; the office phone's dedicated speed-dial key has been verified to use speakerphone on-hook and the handset off-hook.
 - Hanging up ends the voice session.
 - HOID can answer questions, assist with productivity and research, and control authorized smart-home devices.
 - HOID may place an **incoming call to the office phone** for selected reminders, timers, or events. The phone rings; the assistant does **not** spontaneously speak into the room.
@@ -118,7 +118,7 @@ Future garage SIP phone (WIT / ext. 102) ─┘                    │
 | Local LLM | Conversational reasoning | Ollama selected as initial runtime; model and compute capacity remain to be validated |
 | Home Assistant | Source of truth and abstraction for smart devices/automation | Deployed on the private homelab host; first lamp and authenticated REST API ON/OFF manually verified October 19 |
 
-Asterisk is the preferred PBX candidate, pending validation in a working phone prototype. Keep the PBX independent from HOID orchestration so ordinary SIP routing remains available if the assistant fails. The SIP/RTP bridge mechanism is deferred until prototyping establishes a working bidirectional audio path to a simple test application and local STT/TTS. ARI and External Media are possibilities to evaluate, not selected mechanisms. The prototype should measure end-to-end latency and assess interruption support; advanced streaming/barge-in is not required at first.
+Asterisk has been validated as the PBX in the running local telephone prototype. The following ARI/External Media discussion describes an earlier architectural proposal, not the mechanism selected for the current FastAGI implementation. Keep the PBX independent from HOID orchestration so ordinary SIP routing remains available if the assistant fails. The SIP/RTP bridge mechanism is deferred until prototyping establishes a working bidirectional audio path to a simple test application and local STT/TTS. ARI and External Media are possibilities to evaluate, not selected mechanisms. The prototype should measure end-to-end latency and assess interruption support; advanced streaming/barge-in is not required at first.
 
 ## 5. Hosting and homelab integration
 
@@ -138,7 +138,7 @@ Home Assistant is now deployed independently using Docker Compose and persistent
 
 ### Office phone
 
-An initial **SIP desk phone** has been selected for testing. Delivery and provisioning have not been verified as of October 19, 2026. An earlier SIP phone model was considered, not the selected test phone. Dialing/off-hook behavior and SIP registration still require hardware validation.
+A Cisco SPA303 SIP desk phone has been provisioned and verified in live calls. A dedicated programmable line key calls the experimental Assist path, using speakerphone when on-hook and the handset when off-hook. Further hardware/telephony details belong in private operational documentation.
 
 ### Workshop phone
 
