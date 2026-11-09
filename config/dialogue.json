@@ -39,5 +39,33 @@
     "Have I lost you, or are you thinking?",
     "Just checking. Are you still there?",
     "No rush. I'm still here."
-  ]
+  ],
+
+"timer_finished": [
+  "Your {label} timer has finished.",
+  "The {label} timer is up.",
+  "Just a heads-up, your {label} timer is done.",
+  "Time's up for your {label} timer.",
+  "A friendly reminder: your {label} timer has expired.",
+  "Your {label} timer is complete. Splendid.",
+  "The {label} timer has finished. I thought you should know.",
+  "Your {label} timer is done. I'll leave the rest to you."
+],
+"timer_finished_unlabeled": [
+  "Your timer has finished.",
+  "Time's up.",
+  "Your timer is complete.",
+  "Just letting you know, your timer has expired.",
+  "The timer has finished. Back to business.",
+  "Time's up. Whatever you were timing, it's done."
+],
+"alarm_finished": [
+  "Your {label} alarm is going off.",
+  "It's time for {label}.",
+  "A reminder: {label}.",
+  "Your alarm for {label} has arrived.",
+  "Attention, please. It's time for {label}.",
+  "Just a heads-up, it's time for {label}."
+]
+
 }

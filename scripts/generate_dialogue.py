@@ -79,8 +79,25 @@ def main():
     if args.category and args.category not in dialogue:
         parser.error(f"Unknown category: {args.category}")
 
+    dynamic_categories = {
+        "timer_finished",
+        "timer_finished_unlabeled",
+        "alarm_finished",
+    }
+    
+    if args.category in dynamic_categories:
+        parser.error(
+            "Dynamic scheduler announcements are generated at runtime."
+        )
+    
     categories = (
-        [args.category] if args.category else list(dialogue)
+        [args.category]
+        if args.category
+        else [
+            category
+            for category in dialogue
+            if category not in dynamic_categories
+        ]
     )
 
     for category in categories:
