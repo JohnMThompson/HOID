@@ -82,3 +82,6 @@ voices*.bin
 
 # Local development backups
 *.py.bak
+
+# Local FastAGI development snapshots
+scripts/fastagi_assist.py.pre-*
