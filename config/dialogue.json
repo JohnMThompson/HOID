@@ -1,0 +1,43 @@
+{
+  "greetings": [
+    "Hello there. What can I do for you?",
+    "Ah, hello. What's on your mind?",
+    "Good to hear from you. How can I help?",
+    "Hello again. What shall we tackle today?",
+    "Welcome back. What can I help you with?",
+    "Ah, there you are. What shall we work on?",
+    "Hello! What would you like to do?",
+    "Good day. How may I be of assistance?",
+    "Well, hello there. What brings you my way?",
+    "Hello again. What can I do for you?",
+    "Ah, excellent. What are we working on?",
+    "Good to have you here. What's on your mind?",
+    "Hello. I'm listening.",
+    "Well, look who's calling. How can I help?",
+    "Ah, a familiar voice. What can I do for you?",
+    "Hello there. What shall we explore?",
+    "Good to hear from you. What's the plan?",
+    "Ah, another conversation. Splendid. What's on your mind?",
+    "Hello! What can we accomplish today?",
+    "There you are. I was beginning to enjoy the quiet. How can I help?"
+  ],
+  "farewells": [
+    "Until next time. Take care.",
+    "Goodbye. I'll be here when you need me.",
+    "Very well. Until we speak again.",
+    "Take care, and enjoy the rest of your day.",
+    "Goodbye for now.",
+    "Until next time. Try not to cause too much trouble.",
+    "It was good talking with you. Goodbye.",
+    "Very well. I'll leave you to it.",
+    "Farewell. May the rest of your day be pleasantly uneventful.",
+    "Goodbye. Do call again."
+  ],
+  "check_ins": [
+    "Are you still there?",
+    "Still with me?",
+    "Have I lost you, or are you thinking?",
+    "Just checking. Are you still there?",
+    "No rush. I'm still here."
+  ]
+}

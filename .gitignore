@@ -75,3 +75,10 @@ temp/
 
 # HOID private runtime configuration
 /hoid.json
+
+# Local speech model assets
+*.onnx
+voices*.bin
+
+# Local development backups
+*.py.bak

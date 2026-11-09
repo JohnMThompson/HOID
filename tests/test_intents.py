@@ -68,3 +68,34 @@ def test_unsupported_request_does_not_touch_controller():
     response = process_text("Don't turn on the desk lamp", controller)
     assert response.status == "unsupported"
     assert controller.calls == []
+
+@pytest.mark.parametrize(("phrase", "seconds"), [
+    ("Set a timer for 5 minutes.", 300),
+    ("Set a timer for five minutes.", 300),
+    ("Start a timer for 45 seconds.", 45),
+    ("Set a timer for 1 hour.", 3600),
+    ("Set a timer for one hour and thirty minutes.", 5400),
+    ("Set a timer for 2 minutes and 30 seconds.", 150),
+    ("Set a timer for 90 seconds.", 90),
+])
+def test_timer_duration_parsing(phrase, seconds):
+    assert parse_intent(phrase) == Intent(
+        "office_timer",
+        "start_timer",
+        seconds,
+    )
+
+
+@pytest.mark.parametrize("phrase", [
+    "Set a timer for zero minutes.",
+    "Set a timer for 0 seconds.",
+    "Set a timer for 25 hours.",
+    "Set a timer for -5 minutes.",
+    "Don't set a timer for 5 minutes.",
+    "Set a timer for 5 minutes and turn on the lamp.",
+    "Set a timer for a while.",
+    "Set a timer for 5 bananas.",
+    "Set a timer for 1.5 minutes.",
+])
+def test_unsupported_timer_requests_fail_closed(phrase):
+    assert parse_intent(phrase) is None

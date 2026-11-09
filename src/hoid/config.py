@@ -12,8 +12,12 @@ from urllib.parse import urlsplit
 
 from .errors import ConfigurationError
 
-_ENTITY_ID = re.compile(r"^switch\.[a-z0-9_]+$")
-_ACTIONS = {"get_state", "turn_on", "turn_off"}
+_ENTITY_ID = re.compile(r"^(?:switch|timer)\.[a-z0-9_]+$")
+
+_ACTIONS_BY_DOMAIN = {
+    "switch": {"get_state", "turn_on", "turn_off"},
+    "timer": {"start_timer"},
+}
 
 
 @dataclass(frozen=True)
@@ -76,11 +80,24 @@ def load_config(path: str | Path | None = None, *, environ: Mapping[str, str] | 
             raise ConfigurationError(f"Device configuration for {name} is invalid.")
         entity_id, actions = value.get("entity_id"), value.get("actions")
         if not isinstance(entity_id, str) or not _ENTITY_ID.fullmatch(entity_id):
-            raise ConfigurationError(f"Device {name} must use a switch entity ID.")
+            raise ConfigurationError(f"Device {name} must use a switch or timer entity ID.")
         if entity_id in seen_entities:
             raise ConfigurationError("Each configured device must have a unique entity ID.")
-        if not isinstance(actions, list) or not actions or any(a not in _ACTIONS for a in actions):
-            raise ConfigurationError(f"Device {name} has an invalid permitted action set.")
+        domain = entity_id.split(".", 1)[0]
+        allowed_actions = _ACTIONS_BY_DOMAIN[domain]
+
+        if (
+            not isinstance(actions, list)
+            or not actions
+            or any(
+                not isinstance(action, str) or action not in allowed_actions
+                for action in actions
+            )
+        ):
+            raise ConfigurationError(
+                f"Device {name} has an invalid permitted action set."
+            )
+
         devices[name] = Device(name, entity_id, frozenset(actions))
         seen_entities.add(entity_id)
 
