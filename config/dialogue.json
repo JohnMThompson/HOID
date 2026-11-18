@@ -40,32 +40,16 @@
     "Just checking. Are you still there?",
     "No rush. I'm still here."
   ],
-
-"timer_finished": [
-  "Your {label} timer has finished.",
-  "The {label} timer is up.",
-  "Just a heads-up, your {label} timer is done.",
-  "Time's up for your {label} timer.",
-  "A friendly reminder: your {label} timer has expired.",
-  "Your {label} timer is complete. Splendid.",
-  "The {label} timer has finished. I thought you should know.",
-  "Your {label} timer is done. I'll leave the rest to you."
-],
-"timer_finished_unlabeled": [
-  "Your timer has finished.",
-  "Time's up.",
-  "Your timer is complete.",
-  "Just letting you know, your timer has expired.",
-  "The timer has finished. Back to business.",
-  "Time's up. Whatever you were timing, it's done."
-],
-"alarm_finished": [
-  "Your {label} alarm is going off.",
-  "It's time for {label}.",
-  "A reminder: {label}.",
-  "Your alarm for {label} has arrived.",
-  "Attention, please. It's time for {label}.",
-  "Just a heads-up, it's time for {label}."
-]
-
+  "timers": [
+    "Your timer has finished.",
+    "Time's up. I trust you've made good use of it.",
+    "A small interruption, I'm afraid. Your timer has expired.",
+    "The appointed time has arrived.",
+    "Your timer is complete. Shall we carry on?",
+    "Time waits for no one. Especially not your timer.",
+    "A reminder, as requested. Your timer has finished.",
+    "The countdown has concluded. Back to whatever mischief you were managing.",
+    "Your allotted time has elapsed.",
+    "Ding! Well, metaphorically speaking. Your timer is finished."
+  ]
 }
