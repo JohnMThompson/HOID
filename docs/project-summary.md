@@ -14,11 +14,14 @@ The project takes playful inspiration from Hoid/Wit in Brandon Sanderson's Cosme
 
 The initial working implementation now includes a telephone voice session, local speech processing, Home Assistant Assist integration, and a timer callback. The original allowlisted Python Home Assistant client and recorded-file speech-to-action workflow remain separate development and diagnostic interfaces; they are **not** the live telephone orchestration path.
 
+The earlier [Telephone Assist MVP](telephone-assist-mvp.md) documents the initial live-call validation and implementation history.
+
 ## 2. Experience and product vision
 
 ### Office: HOID
 
 - The physical Cisco SPA303 SIP desk phone is the current office interface.
+- A dedicated programmable key calls HOID using speakerphone when on-hook or the handset when off-hook; this was verified during the November 6 telephone MVP.
 - The user dials assistant extension `2000` to start an intentional session; hanging up ends the call. Automatic off-hook dialing is a possible refinement, not a verified feature.
 - HOID can respond to general questions and use actions exposed through Home Assistant Assist. Exact action availability depends on Home Assistant configuration.
 - A user-created Home Assistant timer can ring the office phone and play a spoken notification after answer. The callback was tested successfully.

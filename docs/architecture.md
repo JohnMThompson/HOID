@@ -92,6 +92,23 @@ The following legacy telephone and scheduling paths have been retired:
 
 Asterisk still contains some historical test extensions (`100`, `200`, `201`), which are not part of the live Assist workflow. Do not treat those test extensions as production assistant endpoints.
 
+## Home Assistant-first automation principle
+
+**Prefer native Home Assistant capabilities before building custom HOID tools or services.** HOID provides conversational and telephone access to household capabilities; it should not duplicate Home Assistant's automation platform.
+
+Evaluate new capabilities in this order:
+
+1. **Native Home Assistant:** Use an existing integration, entity, helper, or script.
+2. **Home Assistant orchestration:** Combine capabilities using automations and events.
+3. **Small HOID integration:** Implement only the missing interface, such as an Asterisk telephone callback.
+4. **Custom HOID subsystem:** Build a separate service only when the existing platform cannot reasonably meet the requirement.
+
+Home Assistant owns household device state, timers, and automations wherever practical. HOID owns telephone interaction, speech processing, and the integration boundaries needed to communicate with Home Assistant.
+
+The deployed timer implementation demonstrates this principle: Home Assistant manages the countdown and completion event; Asterisk handles the resulting telephone notification. No independent HOID scheduler is required.
+
+See [ADR 001 — Home Assistant timers](adr/001-home-assistant-timers.md) for the recorded decision.
+
 ## Privacy, safety, and failure behavior
 
 - Sessions are user-initiated by telephone; no ambient always-listening mode is intended.

@@ -2,7 +2,7 @@
 
 HOID (Home Office Interface Device) is a local-first, personality-driven assistant for a home office, with a possible future workshop endpoint called WIT (Workshop Interface Technology). Its primary interface is a physical SIP desk telephone. Ordinary telephone calling and physical lighting controls should remain useful independently of the assistant.
 
-**Status (November 18, 2026):** HOID has a working, manually verified telephone voice-assistant path on the homelab host. A Cisco SPA303 SIP phone connects through Asterisk to a Python FastAGI service. HOID uses local Whisper speech-to-text and Kokoro text-to-speech (Lewis voice), with Home Assistant Assist handling conversational requests through a locally configured Ollama integration. Home Assistant also manages a timer that can ring the telephone on completion. A live telephone conversation and timer callback were successfully tested after retiring the previous FastAGI service.
+**Status (November 18, 2026):** HOID has a working, manually verified telephone voice-assistant path on the homelab host. A Cisco SPA303 SIP phone connects through Asterisk to a Python FastAGI service. HOID uses local Whisper speech-to-text and Kokoro text-to-speech (Lewis voice), with Home Assistant Assist handling conversational requests through a locally configured Ollama integration. Home Assistant also manages a timer that can ring the telephone on completion. A live telephone conversation and timer callback were successfully tested after retiring the previous FastAGI service. A dedicated line key on the Cisco SPA303 provides convenient access using either the handset or speakerphone.
 
 **Public repository policy:** HOID is intentionally public for shareable application code and sanitized documentation. Agents and contributors must follow [AGENTS.md](AGENTS.md). Never commit credentials, real device mappings, household topology, or private runtime configuration.
 
@@ -38,6 +38,7 @@ See [architecture](docs/architecture.md) for responsibilities, boundaries, and t
 
 ## Project documentation
 
+- [Telephone Assist MVP](docs/telephone-assist-mvp.md) — original live telephone validation and implementation notes.
 - [Architecture](docs/architecture.md) — deployed telephone request and timer callback flows, component boundaries, and design principles.
 - [Project summary](docs/project-summary.md) — product vision, privacy and safety principles, and roadmap. Some historical implementation-status sections may still describe earlier milestones.
 - [Home Assistant integration](docs/home-assistant-integration.md) — original physically verified lamp-control milestone and the allowlisted Python client contract.
