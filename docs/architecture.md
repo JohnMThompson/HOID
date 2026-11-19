@@ -1,100 +1,109 @@
-# HOID architecture — interface-agnostic, voice-first
+# HOID architecture — deployed telephone assistant
 
-**Status: October 26, 2026.** This is an architectural direction and an inventory of verified code, not a claim that a voice assistant is already deployed. See [project summary](project-summary.md) for product principles and [Home Assistant integration](home-assistant-integration.md) for the verified device-control boundary.
+**Status: November 18, 2026.** The telephone-to-Home Assistant Assist workflow and timer callback have been tested successfully on Pileated. This document distinguishes the deployed system from legacy test interfaces and future plans. For product goals and constraints, see [project summary](project-summary.md); for the standalone Home Assistant client, see [Home Assistant integration](home-assistant-integration.md).
 
-## Guiding principle
+## Guiding principles
 
-**Voice is how HOID is meant to be experienced, not a dependency of how HOID works.**
+**Voice is how HOID is experienced, not a requirement for every HOID utility.** HOID is local-first and voice-first, initiated deliberately from a physical SIP telephone rather than an always-listening microphone. The CLI and recorded-audio commands remain useful for development and diagnostics, but they are distinct from the deployed telephone conversation path.
 
-HOID is **interface-agnostic by architecture and voice-first by experience**. Its core should accept normalized requests and return structured outcomes without depending on SIP, a microphone, speech engines, or a particular user interface. The preferred user experience is an intentional, responsive spoken conversation using a desk telephone. Typed commands and recorded audio are equally valid development and diagnostic inputs.
+The PBX, Home Assistant, and speech components have separate responsibilities. Ordinary telephony and manual smart-home controls should not depend on the assistant being available. Audio and conversational content should be ephemeral; persistent recording, transcript retention, and conversational memory are not design goals.
 
-Voice-first does **not** mean always listening. Sessions are deliberate, with no default ambient microphone monitoring or persistent audio, transcript, or conversational-memory storage.
-
-## Conceptual flow (target, not yet implemented)
+## Deployed telephone conversation path
 
 ```text
-SIP phone -> Asterisk -----------+
-Microphone / recorded audio -----+--> input adapters --> normalized request
-CLI / text ----------------------+                           |
-                                                            v
-                                                  HOID request processor
-                                               deterministic intent routing
-                                               optional local LLM fallback
-                                                            |
-                                                   approved tools / APIs
-                                                            |
-                                                     Home Assistant
-                                                            |
-                                                   structured outcome
-                                                            |
-                                      +---------------------+------------------+
-                                      |                                        |
-                                  text / CLI                         local TTS -> audio
-                                                                        |
-                                                               phone / speaker
+Cisco SPA303 (SIP extension 101)
+             |
+             v
+Asterisk PBX (Docker; extension 2000)
+             |
+             | AGI(agi://127.0.0.1:4574/assist)
+             v
+HOID FastAGI Assist (systemd: hoid-fastagi-assist.service)
+  scripts/fastagi_assist.py
+  shared telephone/AGI functionality: scripts/fastagi.py
+             |
+             +--> local speech-to-text (Whisper) --> transcript
+             |                                      |
+             |                                      v
+             |                          scripts/assist_bridge.py
+             |                                      |
+             |                                      v
+             |                         Home Assistant Assist
+             |                           |              |
+             |                           |              +--> exposed Home Assistant actions
+             |                           v
+             |                         Ollama (local LLM)
+             |                                      |
+             +<------------- spoken response text <-+
+             |
+             +--> Kokoro TTS (Lewis voice) --> Asterisk --> SIP phone
 ```
 
-Asterisk owns SIP registration, calls, and media transport, not assistant reasoning. An eventual Asterisk-to-HOID audio adapter may use ARI and External Media, but that mechanism is **not selected or tested**. Ordinary telephone calling should continue without HOID.
+The diagram represents component responsibilities and the general request/response flow, not a packet-level sequence. Home Assistant Assist is the conversational orchestration boundary. HOID handles telephone media, local transcription, and speech synthesis; it does **not** run a second, direct Ollama conversation engine for the live phone workflow.
 
-Audio adapters will normalize media for speech recognition. A working assumption for the future STT boundary is mono 16-bit PCM at 16 kHz; this is a proposed internal format, not a deployed contract. Telephone audio may require decoding and resampling. Speech synthesis output likewise requires conversion for its destination. Neither conversion belongs in the assistant core.
+The Assist handler imports shared functionality from `scripts/fastagi.py`. **Do not delete `scripts/fastagi.py` simply because its original standalone service has been retired.**
 
-## Responsibilities and boundaries
+## Timer creation and completion
 
-| Component | Responsibility | Implementation status |
+Timer requests travel through the same telephone and Assist path. Home Assistant owns the timer lifecycle rather than a HOID-specific scheduler.
+
+```text
+Spoken timer request
+    -> HOID STT -> Home Assistant Assist
+    -> script.hoid_start_timer (seconds)
+    -> timer.hoid_office
+    -> Home Assistant timer.finished automation
+    -> Home Assistant shell command creates an Asterisk .call file
+    -> Asterisk originates call to PJSIP/101
+    -> extension 203 plays a randomly selected prerecorded timer message
+    -> hangup
+```
+
+The timer script accepts a duration in seconds (configured range: 1–86,400). Asterisk's callback extension `203` selects one of ten pre-generated Kokoro/Lewis announcements (`timers-01` through `timers-10`). The telephone rings for the callback; HOID does not speak unsolicited audio into the room. A spoken timer request and subsequent callback were verified after the legacy FastAGI cleanup on November 18, 2026.
+
+The callback depends on Home Assistant's timer and automation state and on Asterisk being available when the timer finishes. Do not describe this as an independent HOID scheduler or assume delivery guarantees that have not been tested.
+
+## Components and operational boundaries
+
+| Component | Responsibility | Verified/current state |
 | --- | --- | --- |
-| Input adapters | Accept CLI text, audio files, microphones, or telephone media; normalize requests | CLI argument parsing exists; audio and SIP adapters planned |
-| STT | Convert audio to text locally, independent of source | Planned; engine not selected or benchmarked |
-| Request processor | Interpret normalized text, route known intents, manage outcomes | Planned; no natural-language intent router yet |
-| Approved tools | Enforce permitted actions and execute against external services | Home Assistant allowlisted client implemented |
-| LLM fallback | Handle requests outside deterministic patterns using constrained tools | Planned; no model integration yet |
-| TTS | Turn response text into local speech | Planned; Kokoro/Lewis is a preferred candidate, not validated |
-| Output adapters | Render structured outcomes as CLI text or destination-specific audio | CLI prints messages; spoken output planned |
-| Session manager | Control conversational turn-taking, timeouts, and hangup cleanup | Planned |
-| Asterisk | Independent PBX and SIP/RTP transport | Separate `homelab-asterisk` deployment; telephone registration/audio not yet validated |
+| Cisco SPA303 | Physical handset/speakerphone and SIP endpoint | Registered as extension `101`; live assistant call and callback verified |
+| Asterisk (`homelab-asterisk`) | SIP registration, dialplan, AGI routing, outbound callback | Extension `2000` routes to Assist on port `4574`; extension `203` handles timer playback |
+| `hoid-fastagi-assist.service` | Live telephone conversation handler | Running and enabled at boot |
+| `scripts/fastagi_assist.py` | Telephone interaction, STT and TTS coordination | Active Assist handler |
+| `scripts/fastagi.py` | Shared FastAGI/telephone implementation and legacy standalone entry point | Shared code retained; original `hoid-fastagi.service` stopped and disabled |
+| `scripts/assist_bridge.py` | Exchange conversation text and conversation identifier with Home Assistant Assist | Used by active Assist handler |
+| `src/hoid/stt.py` | Local speech recognition | Used by active Assist handler |
+| `src/hoid/tts.py` | Local speech synthesis | Used by active Assist handler; Kokoro/Lewis voice |
+| Home Assistant Assist | Conversation orchestration and access to exposed actions | Used for live questions, device control, and timer requests |
+| Ollama | Local LLM behind the Assist conversation integration | Used through Home Assistant, not called directly by the live HOID handler |
+| Home Assistant timer/automation | Persist timer state and initiate completion notification | Timer callback tested |
 
-## Current code review (October 26, 2026)
+**Deployment ownership:** Asterisk and Home Assistant are separate homelab services. Their live configuration, secrets, and operational backups belong to the homelab infrastructure, not this application repository. See the [homelab Home Assistant documentation](https://github.com/JohnMThompson/homelab/blob/main/infrastructure/home-assistant.md).
 
-- `src/hoid/cli.py` parses the fixed commands `hoid lamp status|on|off`, maps them to `get_state`, `turn_on`, or `turn_off`, calls `HomeAssistantClient`, and prints a message. **It is not a natural-language interface or reusable request processor yet.**
-- `src/hoid/client.py` implements the approved Home Assistant operations. It checks configured device/action permissions, handles API errors, and verifies reported state after state-changing commands. **Preserve this boundary.**
-- `src/hoid/config.py` loads private runtime configuration and a secret supplied through an environment variable or token file. It validates device names, switch entity IDs, and permitted actions.
-- `pyproject.toml` defines a Python 3.12+ package, the `hoid` CLI entry point, and pytest as a development dependency.
-- The one-shot Docker CLI and physical lamp control have been manually verified. There is **no always-running HOID service, STT, TTS, voice gateway, or LLM integration**. The README reports 20 earlier passing mocked tests and four additional tests whose rerun has not been reported.
+## Other interfaces and retired components
 
-### Refactoring guidance
+The `hoid` CLI and recorded-file utilities are still useful for independently exercising Home Assistant client operations, deterministic intent routing, STT, and TTS. They should **not** be mistaken for the active telephone conversation architecture; in particular, their deterministic routing and allowlisted Python client are separate from Home Assistant Assist's live conversation/action path.
 
-Do not make speech recognition call `cli.main()` or manufacture command-line arguments. When we implement natural-language routing, introduce a small callable request-processing boundary that can be used by the CLI, audio-file prototype, and future telephone adapter. Reuse `HomeAssistantClient` and its existing allowlist and verification logic rather than creating a second Home Assistant control path.
+The following legacy telephone and scheduling paths have been retired:
 
-A **proposed**, not yet implemented, interface could resemble:
+- `hoid-fastagi.service` on port `4573`: stopped and disabled; its former Asterisk extension `202` was removed.
+- The earlier HOID-specific scheduler services and direct Ollama conversation implementation: removed from the active application architecture.
 
-```python
-request = {
-    "text": "Turn on the desk lamp",
-    "session_id": "ephemeral-session-id",
-    "source": "audio_file",
-}
-response = {
-    "text": "The desk lamp is on.",
-    "status": "verified",
-}
-```
-
-The `source` and session information are metadata for authorization, routing, and response presentation; device-specific behavior must not leak into tool execution. These dictionaries are illustrative, not stable Python types or a published API. A response must distinguish verified success, failure, and uncertain outcomes. A transcription is untrusted input; it cannot authorize arbitrary device identifiers or actions.
+Asterisk still contains some historical test extensions (`100`, `200`, `201`), which are not part of the live Assist workflow. Do not treat those test extensions as production assistant endpoints.
 
 ## Privacy, safety, and failure behavior
 
-- No default audio recording, transcript retention, or persistent conversational memory. Dispose of session media and text when the session ends.
-- Only approved, low-risk device actions. Do not grant an LLM unrestricted Home Assistant access.
-- Do not infer permissions solely from a claimed input source; source metadata is not authentication.
-- Preserve ordinary physical/manual controls and independent PBX functionality.
-- If STT, TTS, LLM, or Home Assistant fails, return an explicit failure or uncertain outcome; never invent a successful action or silently substitute another device.
-- Keep credentials, household topology, and real entity IDs out of this public repository. See [AGENTS.md](../AGENTS.md).
+- Sessions are user-initiated by telephone; no ambient always-listening mode is intended.
+- Do not deliberately retain audio, transcripts, or persistent conversation history. Confirm actual runtime logging and retention settings before making a stronger privacy guarantee.
+- Treat transcribed speech and model output as untrusted. Expose only appropriate Home Assistant entities and actions to Assist; do not grant broad control simply because a request arrived through the phone.
+- Exclude high-risk actions such as locks, garage doors, security systems, and purchases from the initial scope.
+- Never log or commit access tokens, SIP credentials, household topology, or private entity identifiers. Follow [AGENTS.md](../AGENTS.md).
+- Distinguish verified success, failure, and uncertain outcomes. If speech recognition, Assist, the LLM, Home Assistant, or speech synthesis fails, do not claim an action succeeded without evidence.
+- Preserve physical/manual device controls and PBX functions independently of the assistant where possible.
 
-## Next implementation milestone: audio-file STT
+## Verified capabilities and future work
 
-1. Define a small, replaceable speech-to-text adapter accepting a local audio file and returning text or an explicit error.
-2. Test transcription on a synthetic or locally recorded command without any telephone dependency.
-3. Measure CPU latency and recognition accuracy on the intended host before committing to an engine/model.
-4. **Only after STT works independently**, connect its output to a deterministic natural-language request processor that reuses the existing allowlisted Home Assistant client.
-5. Add local TTS and later the Asterisk media adapter as independently testable components.
+**Verified as of November 18, 2026:** a live call to extension `2000` completed successfully after retirement of the original FastAGI service; the user confirmed the telephone conversation and a spoken timer request with a subsequent ringing callback. Earlier CLI, STT, TTS, and lamp-control milestones were separately verified during development.
 
-The telephone and audio-file workstreams can progress independently and converge at the adapter boundary. No speech or phone integration is implemented by this document.
+**Future work / not established by this document:** interruption or barge-in support, multi-phone/WIT operation, richer reminder and alarm behavior, comprehensive recovery and delivery guarantees, and security/privacy auditing of every runtime log or retained artifact. Do not present these as already deployed.
