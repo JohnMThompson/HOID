@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-
+from .durations import parse_duration
 
 @dataclass(frozen=True)
 class Intent:
     device: str
     action: str
-
+    duration_seconds: int | None = None
 
 # Keep this deliberately narrow. Unsupported, negated, or ambiguous requests
 # must not trigger an action. Expand patterns only with explicit tests.
@@ -31,4 +31,17 @@ def parse_intent(text: str) -> Intent | None:
     for pattern, action in _PATTERNS:
         if pattern.fullmatch(normalized):
             return Intent(device="desk_lamp", action=action)
+    timer_match = re.fullmatch(
+        r"(?:set|start) a timer for (.+)",
+        normalized,
+    )
+
+    if timer_match:
+        seconds = parse_duration(timer_match.group(1))
+        if seconds is not None:
+            return Intent(
+                device="office_timer",
+                action="start_timer",
+                duration_seconds=seconds,
+            )
     return None

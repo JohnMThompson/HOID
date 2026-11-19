@@ -48,6 +48,78 @@ class HomeAssistantClient:
     def turn_off(self, device_name: str) -> str:
         return self._set_state(device_name, "turn_off", "off")
 
+    def start_timer(self, device_name: str, duration_seconds: int) -> str:
+        """Start an allowlisted Home Assistant timer."""
+        device = self._device(device_name, "start_timer")
+
+        if type(duration_seconds) is not int or not 1 <= duration_seconds <= 86400:
+            raise DeviceError("Timer duration must be between 1 second and 24 hours.")
+
+        current_state = self._read_state(device.entity_id)
+        if current_state == "active":
+            raise CommandRejected("A timer is already running.")
+
+        hours, remainder = divmod(duration_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        duration = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+        response = self._request(
+            "POST",
+            "/api/services/timer/start",
+            json_body={
+                "entity_id": device.entity_id,
+                "duration": duration,
+            },
+        )
+        self._check_response(response, command=True)
+
+        deadline = self._monotonic() + self._config.verification_timeout_seconds
+
+        while True:
+            try:
+                state_response = self._request(
+                    "GET",
+                    f"/api/states/{device.entity_id}",
+                )
+                self._check_response(state_response)
+                timer_state = state_response.json()
+                state = timer_state["state"]
+                reported_duration = timer_state["attributes"]["duration"]
+
+                if (
+                    state == "active"
+                    and isinstance(reported_duration, str)
+                    and reported_duration.count(":") == 2
+                    and all(part.isdigit() for part in reported_duration.split(":"))
+                    and sum(
+                        int(part) * multiplier
+                        for part, multiplier in zip(
+                            reported_duration.split(":"),
+                            (3600, 60, 1),
+                        )
+                    ) == duration_seconds
+                ):
+                    return duration
+
+            except (AuthenticationError, EntityNotFound) as exc:
+                raise OutcomeUncertain(
+                    "Timer command was sent, but its state could not be confirmed."
+                ) from exc
+            except (HomeAssistantUnavailable, ValueError, TypeError, KeyError):
+                pass
+
+            remaining = deadline - self._monotonic()
+
+            if remaining <= 0:
+                raise OutcomeUncertain(
+                    "Timer command was sent, but the requested countdown "
+                    "could not be verified."
+                )
+
+            self._sleep(
+                min(self._config.verification_interval_seconds, remaining)
+            )
+
     def _device(self, name: str, action: str):
         device = self._config.devices.get(name)
         if device is None:

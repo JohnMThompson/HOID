@@ -1,50 +1,45 @@
 # HOID — Project Summary
 
-> **Status (November 6, 2026):** Live telephone calls through Asterisk and a host-local FastAGI/Home Assistant Assist integration are verified, including multi-turn local speech interaction, lamp control, farewell hangup, and a dedicated SPA303 speed-dial key. Public source synchronization is still pending; see [Telephone Assist MVP](telephone-assist-mvp.md).
-> **Purpose:** Public overview of the project direction and planning status. This is a living summary, **not** a complete implementation specification.
+> **Status (November 18, 2026):** HOID has a working, intentionally initiated telephone assistant on Pileated. A Cisco SPA303 registers with Asterisk; dialing the assistant extension (`2000`) starts a FastAGI session using local Whisper speech recognition, Home Assistant Assist for conversation and approved actions, and local Kokoro speech synthesis (Lewis voice). A Home Assistant timer can ring the office phone and play a prerecorded spoken notification. A general-question call and a 20-second timer/callback were successfully tested end to end. The standalone Python CLI and recorded-file workflows remain available. The latest reported Python test run passed **87 tests**.
+>
+> **Purpose:** Public overview of project direction, design principles, and verified milestones—not a deployment runbook or complete implementation specification. See [Architecture](architecture.md) for component boundaries and runtime details.
 
 ## 1. Project overview
 
-**HOID** stands for **Home Office Interface Device**. It is a personal, local-first, personality-driven AI assistant for a home office, with potential expansion into a garage woodshop and other spaces.
+**HOID** stands for **Home Office Interface Device**. It is a personal, local-first, personality-driven assistant for a home office, with potential expansion into a garage woodshop and other spaces.
 
-The goal is not to recreate a generic always-listening smart speaker. HOID should feel like a distinct, useful presence that can be **called on a physical desk telephone**. It should answer questions, assist with work and hobbies, interact with home automation through controlled interfaces, and initiate phone calls for selected reminders or notifications.
+The goal is not a generic always-listening smart speaker. HOID is deliberately contacted through a **physical SIP desk telephone**. It should answer questions, help with work and hobbies, interact with authorized home automation, and ring a phone for selected user-requested events.
 
-The project takes playful inspiration from Hoid/Wit in Brandon Sanderson's Cosmere, but it is an independent personal project, not an official or affiliated adaptation. The acronym and practical functionality should make sense without knowing the reference. Personality is a subtle layer over a reliable assistant, not an excuse for excessive roleplay.
+The project takes playful inspiration from Hoid/Wit in Brandon Sanderson's Cosmere, but is an independent personal project, not an official or affiliated adaptation. Personality should enhance usefulness without becoming excessive roleplay.
 
-HOID has a working local Python CLI and a recorded-file speech-to-action-to-speech prototype. A separate host-local telephone/Assist prototype has now been exercised successfully; its current implementation is not yet confirmed to be synchronized with this public source tree. Its first external dependency—Home Assistant controlling the office desk lamp—has been deployed and verified. Keep candidate technologies and hardware distinct from established direction. See [Home Assistant integration](home-assistant-integration.md) for the verified capability and the proposed client contract.
+The initial working implementation now includes a telephone voice session, local speech processing, Home Assistant Assist integration, and a timer callback. The original allowlisted Python Home Assistant client and recorded-file speech-to-action workflow remain separate development and diagnostic interfaces; they are **not** the live telephone orchestration path.
+
+The earlier [Telephone Assist MVP](telephone-assist-mvp.md) documents the initial live-call validation and implementation history.
 
 ## 2. Experience and product vision
 
 ### Office: HOID
 
-- A physical SIP desk phone in the home office is the defining voice interface.
-- A call to the assistant starts an intentional session; the office phone's dedicated speed-dial key has been verified to use speakerphone on-hook and the handset off-hook.
-- Hanging up ends the voice session.
-- HOID can answer questions, assist with productivity and research, and control authorized smart-home devices.
-- HOID may place an **incoming call to the office phone** for selected reminders, timers, or events. The phone rings; the assistant does **not** spontaneously speak into the room.
-- Text/web interfaces may be added, but the telephone interaction is the defining experience.
+- The physical Cisco SPA303 SIP desk phone is the current office interface.
+- A dedicated programmable key calls HOID using speakerphone when on-hook or the handset when off-hook; this was verified during the November 6 telephone MVP.
+- The user dials assistant extension `2000` to start an intentional session; hanging up ends the call. Automatic off-hook dialing is a possible refinement, not a verified feature.
+- HOID can respond to general questions and use actions exposed through Home Assistant Assist. Exact action availability depends on Home Assistant configuration.
+- A user-created Home Assistant timer can ring the office phone and play a spoken notification after answer. The callback was tested successfully.
+- The phone rings rather than speaking unsolicited into the room; the current timer callback uses prerecorded Kokoro speech.
+- Text/web interfaces may be added later, but the telephone remains the defining experience.
 
 ### Workshop: WIT
 
-A future, secondary workshop effort may add a second phone in the garage woodshop. It would reach the **same underlying system**, with the endpoint name **WIT (Workshop Interface Technology)**.
+A future second phone in the garage woodshop may use the name **WIT (Workshop Interface Technology)**. It would connect to the same underlying assistant, with endpoint-specific context, permissions, and tools determined when implemented.
 
-- WIT is intended to share the underlying orchestration and personality foundation with HOID. Endpoint-specific context, tools, and permissions will be defined when WIT becomes active; persistent conversational memory is not part of the initial architecture.
-- Workshop context emphasizes measurements, conversions, woodworking project notes, reminders, and safe shop environmental controls.
-- The persona may have context-sensitive greetings and behavior, but HOID and WIT are **not separate AI personalities or model stacks**.
-- The workshop is noisy and dusty; a physical handset is attractive for voice interaction.
+- Likely workshop uses include measurements, conversions, woodworking notes, reminders, and safe environmental controls.
+- A physical handset is attractive in a noisy, dusty workspace.
+- HOID and WIT would be contextual identities, not separate AI personalities or model stacks.
 - Never remotely activate hazardous machinery or power tools.
 
 ### Ordinary telephone functionality
 
-The phones must also work as ordinary internal extensions **without involving AI**:
-
-| Proposed extension | Endpoint |
-| --- | --- |
-| `100` | AI assistant |
-| `101` | Office phone (HOID) |
-| `102` | Workshop phone (WIT) |
-
-These numbers are illustrative, not final configuration. Ordinary extension calls should be routed by the PBX independently of the assistant. The first assistant experience targets one SIP phone; intercom and auto-answer are outside initial scope and deferred until multi-phone deployment.
+Asterisk is independent of assistant inference. SIP registration and ordinary PBX routing must not require a working AI service. The office phone is currently extension `101`; the assistant is `2000`. A workshop extension has **not** been deployed or assigned as a final decision. Intercom and auto-answer are deferred.
 
 ## 3. Design principles
 
@@ -52,252 +47,209 @@ These numbers are illustrative, not final configuration. Ordinary extension call
 
 **Automation must add capability without replacing or degrading intuitive physical/manual control.**
 
-- Anyone in the household should be able to operate ordinary lighting without using an AI assistant, app, or voice command.
+- Household members should be able to operate ordinary lighting without HOID, an app, or voice commands.
 - Physical controls should remain discoverable and predictable.
-- Prefer reasonable local fallback when Home Assistant, the network, or the assistant is unavailable.
-- A smart-bulb/detached-mode switch is **not automatically outage-proof**: verify direct Zigbee binding, local fallback, or another independent control path before treating it as equivalent to a normal switch.
+- Prefer useful local fallback when Home Assistant, the network, or the assistant is unavailable.
+- A smart-bulb/detached-mode switch is not inherently outage-proof: verify independent control or suitable local binding before assuming normal-switch behavior.
 - Do not automate dangerous power tools.
 
 ### 3.2 Local-first, private by default
 
-- Prefer on-premises operation and local communication.
-- Keep SIP/PBX access on the home LAN; do not expose telephony ports to the public internet by default.
-- Design for deliberate, opt-in voice sessions rather than ambient always-on listening.
-- Allow household members and visitors with physical access to a HOID phone to use initial low-risk capabilities without accounts, PINs, voice recognition, or speaker identification. Sensitive actions and private household information are outside initial scope.
-- Initial architecture has no persistent conversational memory, audio recordings, or transcript retention: process content in memory for the active session and discard it at hangup. Do not log conversational content or enable Asterisk recording/voicemail or independent speech-service retention by default.
-- Operational logs may contain non-content metadata such as errors, component health, call duration, and performance metrics.
-- Use static configuration for stable assistant/endpoint facts and query authoritative services for live state. Delegate reminders, timers, and scheduled actions to appropriate persistent services rather than conversational memory.
-- Recording or transcript retention is not planned; reconsider only if a specific use case justifies revisiting the decision.
-- Initial low-risk capabilities may include lighting control, general questions, calculations, timers, and basic reminders. Exclude locks, garage doors, alarms, purchases, and private household information.
-- Fail safely when a capability is unavailable: communicate clearly, never claim an unconfirmed outcome, avoid unauthorized substitutions or deferred execution, and keep unrelated capabilities available. Treat timed-out action outcomes as uncertain and avoid automatic retries for potentially consequential or non-idempotent actions.
-- Outbound calls are explicitly opt-in for user-created timers, alarms, reminders, or deliberately configured events. Each has a clear source and destination (defaulting to the originating phone), rings normally until answered, and does not force speakerphone. Do not initiate proactive check-ins, duplicate calls, or automatic rerouting; detailed ringing and scheduling behavior remains to be prototyped.
+- Prefer on-premises speech, inference, and automation; keep SIP/PBX access on the home LAN rather than exposing telephony to the internet.
+- Sessions are initiated deliberately by phone, not through ambient always-on listening.
+- Allow household members and visitors with physical access to use initial low-risk capabilities without voice recognition, PINs, or personal accounts. Exclude sensitive actions and private household information from initial scope.
+- **Design intent:** no persistent conversational memory, saved audio, or retained transcripts. Process speech for the active call and discard it afterward. Actual retention also depends on Asterisk, speech-service, Home Assistant, and logging configuration; verify these settings during operational reviews.
+- Operational logs may retain non-content metadata such as component health, errors, and call timing. Avoid logging conversation content.
+- Stable facts belong in configuration; live state belongs in authoritative systems. Timers and scheduled actions belong in Home Assistant or another persistent service, not LLM memory.
+- Initial capabilities are low risk: general questions, calculations, lighting, and timers. Locks, garage doors, alarms, purchases, and other consequential actions remain out of scope.
+- Fail safely: do not report unconfirmed success, silently substitute actions, or automatically retry potentially consequential commands after an uncertain timeout.
+- Outbound calls should correspond to explicit timers, alarms, reminders, or configured events—not unsolicited proactive check-ins.
 
 ### 3.3 Modular and model-independent
 
-- The HOID application should not be tightly coupled to one LLM, speech engine, or hardware accelerator.
-- Keep telephony, speech, orchestration, inference, and home automation responsibilities separate.
-- Treat integrations as controlled interfaces, not unrestricted execution privileges.
-- Start small; prioritize low latency, reliability, and maintainability over maximal features.
+- Keep telephony, speech recognition, conversation orchestration, inference, and home automation responsibilities separate.
+- Avoid unnecessary coupling to one LLM, speech engine, or accelerator.
+- Integrations are controlled interfaces, not unrestricted execution privileges.
+- Prefer small, reliable, maintainable increments over maximal features.
 
 ### 3.4 Character serves usefulness
 
-- Shared personality: dry, witty, mischievous, insightful, warm when appropriate.
-- Routine commands should receive short, direct responses.
-- Humor and lore references should be occasional rewards, not constant interruptions.
-- HOID and WIT are contextual names for the same underlying character.
+- Shared personality: dry, witty, mischievous, insightful, and warm when appropriate.
+- Routine commands should get short, direct responses.
+- Humor and lore references should be occasional, not constant.
+- HOID and future WIT are contextual names for the same underlying character.
 
-## 4. Conceptual architecture
+## 4. Deployed architecture
 
 ```text
-Office SIP phone (HOID / ext. 101) ──┐
-                                    ├── Local LAN ── Candidate PBX (Asterisk preferred)
-Future garage SIP phone (WIT / ext. 102) ─┘                    │
-                                                        ├── Direct extension-to-extension calls
-                                                        │   (no AI required)
-                                                        └── Assistant call endpoint
-                                                                  │
-                                                            HOID orchestrator
-                                                             /     |      \
-                                                           STT    LLM     TTS
-                                                                  │
-                                                         Controlled tools/APIs
-                                                                  │
-                                                           Home Assistant
-                                                                  │
-                                                          Smart-home devices
+Cisco SPA303 SIP phone (extension 101)
+             |
+             v
+Asterisk PBX (separate Docker service on Pileated)
+             |
+             | call assistant extension 2000
+             v
+FastAGI Assist service (Python, port 4574)
+     |           |               |
+     v           v               v
+Whisper STT   Assist bridge   Kokoro TTS (Lewis)
+                 |
+                 v
+        Home Assistant Assist
+                 |
+         +-------+-------+
+         |               |
+    Exposed HA       Local LLM via
+    actions/scripts  Ollama integration
+         |
+    Home Assistant devices and automations
 ```
 
-**Responsibility boundaries:**
+The FastAGI session records an utterance, transcribes it locally, sends text and conversation context to Home Assistant Assist, synthesizes the returned response locally, and plays it through Asterisk. The deployed flow is turn-based, not a verified streaming/barge-in system. Home Assistant Assist determines which exposed actions are available; it does **not** use the standalone CLI's device allowlist.
 
-| Component | Responsibility | Current status |
-| --- | --- | --- |
-| SIP phone | Physical calling, handset/speakerphone, ringing | SIP desk phone selected for initial testing; delivery and provisioning not verified as of October 19 |
-| PBX | SIP registration, call routing, RTP/media, internal extensions | Asterisk is preferred; selection and deployment not validated |
-| HOID orchestrator | Session management, persona/context, tool routing, notifications, memory policy | Conceptual |
-| STT / TTS | Speech recognition and synthesis | Local Whisper and Kokoro (Lewis) verified for recorded-file CLI; telephone audio not integrated |
-| Local LLM | Conversational reasoning | Ollama selected as initial runtime; model and compute capacity remain to be validated |
-| Home Assistant | Source of truth and abstraction for smart devices/automation | Deployed on the private homelab host; first lamp and authenticated REST API ON/OFF manually verified October 19 |
+**Timer callback path:** Home Assistant Assist invokes a configured timer script → Home Assistant timer completes → automation creates an Asterisk call file → Asterisk rings office extension `101` → the answered call plays one of ten prerecorded Lewis announcements. This has been tested with a 20-second timer.
 
-Asterisk has been validated as the PBX in the running local telephone prototype. The following ARI/External Media discussion describes an earlier architectural proposal, not the mechanism selected for the current FastAGI implementation. Keep the PBX independent from HOID orchestration so ordinary SIP routing remains available if the assistant fails. The SIP/RTP bridge mechanism is deferred until prototyping establishes a working bidirectional audio path to a simple test application and local STT/TTS. ARI and External Media are possibilities to evaluate, not selected mechanisms. The prototype should measure end-to-end latency and assess interruption support; advanced streaming/barge-in is not required at first.
+| Component | Verified role / current status |
+| --- | --- |
+| Cisco SPA303 | Registered SIP desk phone; handset/speakerphone and ringing used for assistant calls |
+| Asterisk | Deployed independently in Docker; handles SIP registration, dialplan, FastAGI invocation, and outbound callback calls |
+| HOID FastAGI Assist | Active Python systemd service; connects telephony audio, local STT/TTS, and Home Assistant Assist |
+| Whisper / Kokoro | Local speech-to-text and text-to-speech in the telephone workflow; Kokoro uses Lewis voice |
+| Home Assistant Assist | Conversation and exposed home-action orchestration; uses configured Ollama integration for LLM reasoning |
+| Home Assistant | Deployed device/automation layer; first desk-lamp outlet physically verified; owns current timer lifecycle |
+| Standalone Python CLI | Separate allowlisted HA client, deterministic intent routing, recorded-file transcription, and speech testing |
+
+The former direct Ollama conversation implementation and custom scheduler services were retired. A legacy FastAGI service/extension was also disabled and removed from the active dialplan. Shared FastAGI support code remains in use by the active Assist service. See [Architecture](architecture.md) for details.
 
 ## 5. Hosting and homelab integration
 
-**Preferred host:** an always-on private Ubuntu Server machine, using Docker Compose.
+**Host:** Pileated, an always-on private Ubuntu Server machine.
 
-- Run Asterisk in its **own Compose project**, separate from the HOID application.
-- Docker host networking is a reasonable starting candidate for SIP/RTP on Linux, to reduce NAT/port-mapping complexity; validate security and compatibility during implementation.
-- SIP signaling commonly uses UDP 5060, and RTP commonly uses a configurable UDP range (often 10000–20000). These are **examples, not finalized port allocations**.
-- Persist Asterisk configuration and relevant state/logs using mounted volumes.
-- Asterisk's resource needs for a few internal extensions should be modest; **local model inference is likely to dominate compute requirements**.
-- A secondary low-power utility host is an alternative host or possible future fallback, but is **not preferred** for the initial PBX deployment.
-- If the private homelab host is down, its hosted PBX and internal calls are down; that availability tradeoff is acceptable for this convenience-oriented system initially.
+- Asterisk runs in its own Docker/Compose deployment, separate from the HOID Python application.
+- The active FastAGI Assist service is managed by systemd on the host.
+- Home Assistant runs separately and is the authority for exposed smart-home actions, scripts, and timers.
+- Local Whisper, Kokoro, and Ollama components are part of the speech/inference path; measure real-world latency and resource use before expanding functionality.
+- PBX independence matters: assistant failures should not disable ordinary telephone routing.
+- A Pileated outage also affects services hosted there; that is an acceptable initial tradeoff for this convenience-oriented project.
 
-Home Assistant is now deployed independently using Docker Compose and persistent configuration on the private homelab host. These are **infrastructure facts**, owned by the [homelab repository](https://github.com/JohnMThompson/homelab/blob/main/infrastructure/home-assistant.md), not a proposed HOID application layout. Paths for future Asterisk and HOID deployments remain undecided. Do not assume the inference stack can run acceptably on current hardware.
+Deployment paths, credentials, host-specific device identifiers, and infrastructure configuration belong in the private [homelab repository](https://github.com/JohnMThompson/homelab), not in this public HOID repository. This summary deliberately omits private runtime configuration.
 
 ## 6. Telephony hardware and network
 
 ### Office phone
 
-A Cisco SPA303 SIP desk phone has been provisioned and verified in live calls. A dedicated programmable line key calls the experimental Assist path, using speakerphone when on-hook and the handset when off-hook. Further hardware/telephony details belong in private operational documentation.
+The Cisco SPA303 is installed, powered, and registered with Asterisk as extension `101`. Dialing `2000` reaches the working assistant. An incoming timer callback successfully rang the phone and played an announcement. An off-hook hotline/auto-dial experience is **not** yet established; ordinary dialing is the verified interaction.
 
 ### Workshop phone
 
-A second SIP desk phone is a possible later WIT effort. The garage currently lacks a dedicated Ethernet/coax connection. Connectivity options have not been selected and are deferred until that effort begins. Possibilities include:
+No WIT phone or garage connection has been deployed. Options to investigate later include a Wi-Fi-to-Ethernet bridge for a SIP phone, a Wi-Fi-capable SIP phone, or wired Ethernet. Evaluate garage Wi-Fi stability, dust, seasonal temperature, and handset usability before selecting equipment.
 
-1. A **Wi-Fi-to-Ethernet client bridge** connected to an Ethernet-only SIP phone, with separate compatible power or PoE injection as needed.
-2. A SIP desk phone with built-in Wi-Fi.
-3. A future wired Ethernet run.
+### Future call behavior
 
-Test Wi-Fi signal quality, latency, packet loss, and roaming stability in the garage. Consider dust and seasonal temperature conditions. No bridge model or second phone has been selected.
-
-### Dialing and call behavior to validate
-
-- Standard extension dialing between phones should work without the assistant.
-- An AI extension can be dialed like another SIP endpoint.
-- Desired experience: lifting the handset can reach HOID easily **without preventing dialing other extensions**. Hotline/off-hook auto-dial and dialing delays require deliberate design and phone-specific validation.
-- Assistant-originated calls are limited to explicitly requested or deliberately configured notifications; delivery mechanics remain to be prototyped.
-- Intercom and auto-answer are not part of the initial implementation.
+- Maintain direct PBX extension routing independently of the assistant.
+- Consider an easier assistant dialing experience without preventing ordinary extension calls.
+- Defer intercom, auto-answer, multiple endpoints, and sophisticated call interruption until justified by use.
+- Keep assistant-originated calls tied to deliberate, identifiable events.
 
 ## 7. Smart-home scope and candidates
 
 ### Initial physical scope
 
-**Home office and its en-suite bathroom**, with potential later expansion into the basement and garage.
+Home office and its en-suite bathroom, with potential later expansion to the basement and garage.
 
 ### Office lighting
 
-**First working device (verified October 19, 2026):** A Wi-Fi smart outlet powers the desk lamp. It is integrated locally with Home Assistant's local smart-device integration as an outlet entity (actual identifier private; domain `switch`, device class `outlet`). Home Assistant UI and authenticated REST API ON/OFF commands both physically controlled the lamp; the final API state read was `off`. This verifies the device/control path, **not** a deployed HOID application. See [Home Assistant integration](home-assistant-integration.md).
+**First verified device (October 19, 2026):** a Wi-Fi smart outlet powers the desk lamp. Home Assistant UI and authenticated REST API commands physically switched the lamp on and off. The standalone HOID CLI subsequently verified lamp control and spoken confirmation in a recorded-file workflow. The telephone assistant now accesses approved smart-home functionality through **Home Assistant Assist**, which has its own exposed-action configuration.
 
-Existing setup:
+Existing office lighting described during planning:
 
-- Four overhead recessed/can lights on one wall switch.
-- One floor lamp.
-- One desk lamp.
-- House switches reportedly have neutral and ground available.
+- Four recessed overhead lights on one wall switch.
+- One floor lamp and one desk lamp.
+- Neutral and ground reportedly available at house switches.
 
-Desired capability: adjustable brightness, **color temperature, and color** for the overhead lights, while retaining practical physical control.
+Desired future behavior includes brightness, color temperature, and possibly color control, while preserving useful manual switching. Earlier exploration considered Hue White & Color Ambiance BR30/A19 bulbs, a Hue Bridge, and suitable physical wall controls. These are **candidates, not purchases or final architecture decisions**; verify fixture compatibility and fallback behavior first.
 
-Leading *proposal*, not a purchase decision:
+### Bathroom and other possibilities
 
-- Four **Philips Hue White & Color Ambiance BR30** bulbs, **if** fixture dimensions and sockets are compatible (verify BR30/E26 assumptions).
-- Two Hue A19 bulbs for lamps, subject to fixture compatibility.
-- Hue Bridge.
-- Smart wall control with appropriate smart-bulb/detached functionality and robust local physical behavior.
-- Optional Hue dimmer/buttons or other accessible controls for lamps.
+A conventional smart dimmer with compatible LED bulbs may be simpler for the bathroom; presence-aware nighttime lighting remains exploratory. Other optional additions include mmWave presence sensing, environmental sensors, safe smart plugs, and motorized blinds. Avoid buying a large device ecosystem before demonstrating concrete value.
 
-A conventional smart dimmer with ordinary bulbs would not provide tunable color/color temperature. The exact switch/bulb/bridge combination must be assessed for compatibility and fallback behavior before buying.
+## 8. Functional capabilities
 
-### Bathroom
+### Verified
 
-Likely simpler: smart wall dimmer with normal compatible LED bulbs, optionally a presence sensor and dim nighttime behavior. Still exploratory.
+- Dial the office assistant extension and converse through a physical SIP phone.
+- Ask a general question and receive a locally synthesized spoken answer through the telephone.
+- Request a timer through Home Assistant Assist; have the office phone ring when it finishes and play a prerecorded spoken notification.
+- Control the first desk-lamp outlet through Home Assistant and the standalone allowlisted Python CLI; recorded-file voice-to-action-to-speech was also validated.
+- Run local Whisper transcription and Kokoro (Lewis) synthesis for telephone and CLI workflows.
 
-### Other optional devices
+### Potential next improvements
 
-- mmWave presence sensing.
-- Temperature/humidity sensors.
-- One or two smart plugs for safe, nonhazardous loads.
-- Motorized blinds at a later stage.
+- Better turn-taking, latency measurement, interruption handling, and conversational reliability.
+- More exposed low-risk Home Assistant capabilities with deliberate scope review.
+- Better call failure behavior, observability, and operational recovery checks.
+- More convenient dialing behavior on the office phone.
+- Additional timer/reminder lifecycle features where Home Assistant supports them.
 
-No need to buy a large device ecosystem before the first useful workflow is demonstrated.
+### Later possibilities, not committed
 
-## 8. Functional capabilities to explore
+- Workshop WIT endpoint and context.
+- Direct office-to-workshop calls, then optional intercom behavior.
+- Web/text interface, additional rooms and devices, and carefully selected notifications.
+- Persistent conversational memory remains **unplanned** unless a specific use case justifies revisiting the decision.
 
-**Possible capabilities, not a committed backlog:**
+## 9. Current direction and open decisions
 
-- Call HOID from office phone and have a responsive voice conversation.
-- Call WIT from workshop phone with workshop-specific context.
-- Make direct office↔workshop telephone calls with no AI path.
-- Query and control authorized office lights via Home Assistant.
-- Ask for conversions, measurements, notes, and reminders.
-- Ring a phone for selected reminders/timers instead of speaking unsolicited into the room.
+### Established
 
-**Later possibilities:**
+- HOID is local-first and voice-first, without ambient always-on listening.
+- The physical office SIP phone and Asterisk PBX are deployed and operational.
+- Assistant calls use FastAGI, local STT/TTS, Home Assistant Assist, and its configured Ollama integration.
+- Home Assistant owns the current timer and outbound callback automation.
+- Home Assistant is the smart-device authority; the CLI's allowlisted client is a separate tool, not the telephone action authorization path.
+- Ordinary telephone behavior remains separate from AI service availability.
+- Automation is additive, and sensitive or hazardous actions are outside initial scope.
+- No persistent conversation memory or content retention is intended; configuration and logs should be audited to ensure the deployed system matches that policy.
+- WIT remains a future extension, not a second deployed endpoint.
 
-- Web/text interface.
-- Persistent conversational memory is not planned; reconsider only if a concrete use case justifies changing that decision.
-- More rooms and additional SIP endpoints.
-- Optional intercom behavior after WIT is introduced.
-- Presence-informed notifications and richer automations.
+### Open / deferred
 
-Capabilities above are product ideas, **not a committed backlog**.
+- Measure and improve full call latency and interruption behavior.
+- Confirm operational retention settings across the complete call and Assist stack.
+- Review production logging, monitoring, backup/recovery, and failure paths.
+- Decide whether to configure automatic assistant dialing when lifting the handset.
+- Determine WIT connectivity, equipment, and endpoint-specific permissions if pursued.
+- Validate any additional lighting equipment and independent manual controls before purchase.
+- Define boundaries for any future web-assisted research capability or sensitive household information.
 
-## 9. Current direction and status
+## 10. Milestones and progress
 
-### Established direction
+| Milestone | Status |
+| --- | --- |
+| Document vision and privacy/safety principles | Established; living documentation |
+| Home Assistant and physical desk-lamp control | **Verified October 19, 2026** |
+| Standalone CLI, recorded-file Whisper → action → Kokoro response | **Verified October 26, 2026** |
+| SIP phone registration and Asterisk assistant call routing | **Verified** |
+| Live telephone Assist conversation using local STT/TTS | **Verified** |
+| Home Assistant timer and Asterisk phone callback | **Verified** with a 20-second timer |
+| Legacy scheduler/direct conversation cleanup | **Completed** on current feature branch |
+| Reliability, documentation, and integration refinement | **In progress** |
+| WIT workshop endpoint | **Deferred** |
 
-- Home Assistant Container is deployed on the private homelab host, and local API control of the first lamp was physically verified October 19. An allowlisted HOID Python client has been implemented and live-tested.
-- The SIP desk phone is selected for initial SIP phone testing; delivery/provisioning are pending verification.
-- The project and repository are named **HOID**.
-- The primary voice interaction is a physical SIP desk phone, not an always-listening smart speaker.
-- The workshop variant is named **WIT** and is a secondary effort intended to share the underlying system.
-- Workshop-specific context, tools, permissions, and connectivity will be considered when WIT becomes active.
-- HOID is a shared assistant platform with multiple physical endpoints; endpoints may use distinct context, tools, permissions, and behavior.
-- Normal extension-to-extension calls must bypass AI.
-- A phone-originated call starts an intentional assistant interaction; off-hook dialing behavior still needs phone validation.
-- Assistant-originated calls are only for explicitly requested or configured notifications; no proactive check-ins.
-- SIP telephony is the intended phone interface, but Asterisk remains a preferred candidate rather than a final PBX selection.
-- The first assistant experience targets one SIP phone. A separate initial telephony validation milestone is ordinary calls between two SIP extensions before adding AI.
-- **Automation is additive** is a non-negotiable design principle.
-- Home Assistant is the deployed smart-device control layer for the first office lamp.
-- Local-first, modular architecture with replaceable model/speech components.
-- No persistent conversational memory, audio recording, or transcript retention in the initial architecture. Active session context is discarded at hangup.
-- Low-risk household access does not require speaker authentication; sensitive actions are outside initial scope.
-- Fail safely when dependencies or integrations are unavailable; never claim unconfirmed success.
-- Local STT/TTS is implemented for recorded-file CLI workflows using Whisper and Kokoro (Lewis voice); live telephone streaming is still unimplemented.
-- Ollama is the selected initial LLM runtime; the model and required compute capacity remain open.
-- Prefer the private homelab host for the PBX; keep the PBX independently deployable from HOID.
-
-### Preferred candidates, not final selections
-
-- Asterisk as PBX, deployed via Docker Compose with host networking.
-- An earlier SIP phone candidate was superseded by the selected initial test phone; hardware details remain private.
-- Hue-based office lighting.
-- Wi-Fi client bridge for a workshop Ethernet SIP phone.
-- Example extension numbers `100`/`101`/`102`.
-
-### Deferred validation and planning
-
-- Validate the preferred PBX and select a SIP/RTP bridge through a working phone/audio prototype.
-- Select the LLM, quantization, and compute capacity after verifying the host and benchmarking local inference.
-- Extend the validated local Whisper/Kokoro recorded-file pipeline to telephone audio; measure complete call latency.
-- Validate the phone model, provisioning, and off-hook behavior when phone hardware is available.
-- Define detailed notification delivery, timeout, health-check, and retry behavior during prototyping.
-- Extend smart lighting beyond the verified first lamp outlet only after selecting and validating additional hardware.
-- Define monitoring, secrets, updates, backups, and recovery during deployment planning.
-- Revisit WIT connectivity and endpoint-specific behavior when the workshop effort begins.
-- Define authorization and confirmation only if sensitive capabilities are proposed; such capabilities are outside initial scope.
-- Choose which persistent service owns timers/reminders and define their creation, cancellation, and delivery lifecycle.
-- Clarify which household/endpoint configuration can be version-controlled and which information or secrets must remain local.
-- Clarify whether the initial "research" capability may use internet sources while speech and inference remain local.
-
-## 10. Suggested milestones (nonbinding)
-
-1. **Document the concept:** Repository README, this summary, vision, design principles, and lightweight decision records.
-2. **Validate telephony:** Use the preferred PBX candidate on the private homelab host to verify ordinary calling between two SIP extensions before adding AI. This is separate from the initial assistant scope, which targets one SIP phone. WIT and multi-phone deployment are secondary.
-3. **Prototype assistant calls:** Connect a minimal voice assistant endpoint to the PBX; measure end-to-end latency.
-4. **Introduce controlled home actions:** Home Assistant + first lamp + direct REST API proof **completed October 19, 2026**; the allowlisted Python client and recorded-file voice-driven control were subsequently validated October 26, 2026.
-5. **Refine character and reliability:** Persona, short responses, session lifecycle, logging, failure handling, and notifications.
-6. **Extend to WIT:** Garage connectivity, second endpoint, workshop context and safe tool permissions.
-
-Milestones are sequencing ideas, not dates or commitments. Hardware selection and experimentation may change the order.
+Latest reported automated test result after cleanup: **87 passed**. This is not a claim that all operational error paths or privacy settings have been tested.
 
 ## 11. Guidance for future AI coding agents
 
-- **Read this document before proposing architecture or generating code.**
-- Do **not** interpret candidate technologies, example extension numbers, folder layouts, or milestone ideas as final requirements.
-- Preserve the distinction between **decided**, **proposed**, and **open**.
-- Respect **Automation is additive**, physical controls, and local privacy boundaries.
-- Keep Asterisk/PBX operationally separate from the assistant so basic calls do not depend on AI availability.
-- Ask before making irreversible purchases, enabling remote access, choosing long-term platforms, or implementing hazardous device controls.
-- Prefer small, testable experiments over prematurely building the whole system.
-- Record meaningful architecture decisions with rationale as the design evolves.
-- Update this document when decisions materially change; do not silently rewrite project intent.
+- **Read this summary and [Architecture](architecture.md) before proposing changes.** Inspect current code and deployment configuration before claiming a behavior is implemented.
+- Distinguish **verified**, **implemented but not fully tested**, **proposed**, and **deferred**.
+- Do not reintroduce the retired custom scheduler or direct Ollama conversation engine without a specific architectural decision.
+- Do not confuse the CLI allowlist with Home Assistant Assist's exposed entities/actions.
+- Preserve **Automation is additive**, local privacy boundaries, and independent PBX operation.
+- Do not commit credentials, private entity mappings, household topology, or runtime configuration to the public repository; follow [AGENTS.md](../AGENTS.md).
+- Ask before enabling remote access, making purchases, implementing sensitive actions, or automating hazardous devices.
+- Prefer small, testable changes, and record architectural decisions with rationale.
+- Update this document when material decisions change without silently rewriting the original project intent.
 
 ---
 
-*Originally drafted October 8, 2026; updated October 19, 2026 to reflect verified Home Assistant infrastructure and the selected initial phone.*
-
-
-## Recorded-file voice milestone (verified October 26, 2026)
-
-The CLI can transcribe an existing recording locally, recognize an allowlisted desk-lamp intent, execute and verify the Home Assistant action, and optionally synthesize the verified response as a WAV file. The operator confirmed the physical action and heard the generated response. Speech output is secondary to verified action: synthesis failure does not undo an already completed action. No persistent service, live microphone session, SIP audio path, or LLM reasoning was validated by this test. See [spoken confirmation](spoken-confirmation.md).
+*Originally drafted October 8, 2026. Updated November 18, 2026 to distinguish the deployed telephone assistant and Home Assistant timer callbacks from the earlier CLI prototype and future plans.*
